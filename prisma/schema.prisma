@@ -4,13 +4,13 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model Continent {
   id            Int       @id @default(autoincrement())
   name          String    @unique
-  boundsGeojson String    @map("bounds_geojson") @db.Text
+  boundsGeojson String    @map("bounds_geojson")
   countries     Country[]
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -24,7 +24,7 @@ model Country {
   name        String    @unique
   slug        String    @unique
   flagUrl     String?   @map("flag_url")
-  geojson     String?   @db.Text
+  geojson     String?
   continent   Continent @relation(fields: [continentId], references: [id])
   provinces   Province[]
   createdAt   DateTime  @default(now()) @map("created_at")
@@ -37,7 +37,7 @@ model Province {
   id        Int       @id @default(autoincrement())
   countryId Int       @map("country_id")
   name      String
-  geojson   String?   @db.Text
+  geojson   String?
   country   Country   @relation(fields: [countryId], references: [id])
   cities    City[]
   createdAt DateTime  @default(now()) @map("created_at")
@@ -69,10 +69,10 @@ model Attraction {
   lat           Float
   lng           Float
   rating        Float      @default(4.0)
-  images        String[]   @default([])
-  ticketInfo    String?    @map("ticket_info") @db.Text
-  transportTips String?    @map("transport_tips") @db.Text
-  description   String?    @db.Text
+  images        String     @default("[]")
+  ticketInfo    String?    @map("ticket_info")
+  transportTips String?    @map("transport_tips")
+  description   String?
   city          City       @relation(fields: [cityId], references: [id])
   guideItems    GuideItem[]
   createdAt     DateTime   @default(now()) @map("created_at")
@@ -89,7 +89,7 @@ model Guide {
   budgetAmount      Int        @map("budget_amount")
   transportMode     String     @map("transport_mode")
   travelStyle       String     @map("travel_style")
-  rawJson           Json?      @map("raw_json")
+  rawJson           String?    @map("raw_json")
   destinationCity   City       @relation(fields: [destinationCityId], references: [id])
   days              GuideDay[]
   createdAt         DateTime   @default(now()) @map("created_at")
@@ -103,7 +103,7 @@ model GuideDay {
   guideId   Int         @map("guide_id")
   dayNumber Int         @map("day_number")
   title     String
-  notes     String?     @db.Text
+  notes     String?
   guide     Guide       @relation(fields: [guideId], references: [id])
   items     GuideItem[]
   createdAt DateTime    @default(now()) @map("created_at")
@@ -119,8 +119,8 @@ model GuideItem {
   timeSlot       String      @map("time_slot")
   customSpot     String?     @map("custom_spot")
   durationMin    Int         @map("duration_min")
-  ticketReminder String?     @map("ticket_reminder") @db.Text
-  tips           String?     @db.Text
+  ticketReminder String?     @map("ticket_reminder")
+  tips           String?
   guideDay       GuideDay    @relation(fields: [guideDayId], references: [id])
   attraction     Attraction? @relation(fields: [attractionId], references: [id])
   createdAt      DateTime    @default(now()) @map("created_at")
