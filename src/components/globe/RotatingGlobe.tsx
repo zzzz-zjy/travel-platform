@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import { Mesh } from "three";
+import { useFrame, useLoader } from "@react-three/fiber";
+import { Mesh, TextureLoader } from "three";
 
 export default function RotatingGlobe() {
   const meshRef = useRef<Mesh>(null);
+  const texture = useLoader(TextureLoader, "/earth-texture.jpg");
 
   useFrame((_, delta) => {
     if (meshRef.current) {
@@ -16,7 +17,7 @@ export default function RotatingGlobe() {
   return (
     <mesh ref={meshRef}>
       <sphereGeometry args={[1, 64, 64]} />
-      <meshStandardMaterial color="#1a5c8a" wireframe />
+      <meshStandardMaterial map={texture} />
     </mesh>
   );
 }
