@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,8 +12,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-CN">
       <body style={{ minHeight: "100vh", background: "white", color: "#111827", margin: 0 }}>
-        <Header />
-        <main>{children}</main>
+        <Providers>
+          <Header />
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );

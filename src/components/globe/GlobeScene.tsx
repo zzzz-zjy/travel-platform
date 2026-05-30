@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import * as THREE from "three";
 import gsap from "gsap";
 import RotatingGlobe from "./RotatingGlobe";
-import Atmosphere from "./Atmosphere";
 import CountryPicker from "./CountryPicker";
 import { latLngToVec3 } from "@/lib/geo";
 
@@ -80,32 +79,32 @@ const THEMES: Record<TimeOfDay, {
   boxBg: string;
 }> = {
   night: {
-    bg: "linear-gradient(180deg, #000005 0%, #000010 50%, #000008 100%)",
-    ambientLight: 0.15,
-    dirLight: 2.5,
+    bg: "#0a0e1a",
+    ambientLight: 1.5,
+    dirLight: 0.5,
     textColor: "#e2e8f0",
-    boxBg: "rgba(255,255,255,0.08)",
-  },
-  dawn: {
-    bg: "linear-gradient(180deg, #000010 0%, #0a0a20 40%, #1a0a2e 100%)",
-    ambientLight: 0.2,
-    dirLight: 2.5,
-    textColor: "#e2e8f0",
-    boxBg: "rgba(255,255,255,0.08)",
-  },
-  day: {
-    bg: "linear-gradient(180deg, #000008 0%, #000015 50%, #00000c 100%)",
-    ambientLight: 0.25,
-    dirLight: 3.0,
-    textColor: "#f1f5f9",
     boxBg: "rgba(255,255,255,0.1)",
   },
+  dawn: {
+    bg: "linear-gradient(180deg, #1a1a3e 0%, #4a3070 40%, #e8845c 70%, #f5c96a 100%)",
+    ambientLight: 1.5,
+    dirLight: 0.5,
+    textColor: "#1e293b",
+    boxBg: "rgba(255,255,255,0.7)",
+  },
+  day: {
+    bg: "linear-gradient(180deg, #3b82f6 0%, #93c5fd 45%, #c9e4ff 100%)",
+    ambientLight: 1.5,
+    dirLight: 0.5,
+    textColor: "#1e293b",
+    boxBg: "rgba(255,255,255,0.8)",
+  },
   dusk: {
-    bg: "linear-gradient(180deg, #000010 0%, #0a0818 40%, #1a0a18 100%)",
-    ambientLight: 0.2,
-    dirLight: 2.5,
-    textColor: "#e2e8f0",
-    boxBg: "rgba(255,255,255,0.08)",
+    bg: "linear-gradient(180deg, #1a1040 0%, #6b3a5b 40%, #e07a5f 70%, #f2cc8f 100%)",
+    ambientLight: 1.5,
+    dirLight: 0.5,
+    textColor: "#1e293b",
+    boxBg: "rgba(255,255,255,0.6)",
   },
 };
 
@@ -131,8 +130,14 @@ const TIME_LABELS: Record<TimeOfDay, string> = {
 export default function GlobeScene() {
   const [selectedContinent, setSelectedContinent] = useState<string | null>(null);
   const [cameraTarget, setCameraTarget] = useState<THREE.Vector3 | null>(null);
-  const [timeOfDay] = useState<TimeOfDay>(getTimeOfDay);
+  const [lockedRotation, setLockedRotation] = useState(0);
+  const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>("day");
   const globeRotationRef = useRef(0);
+
+  // Detect local time on client-side only (avoids SSR timezone mismatch)
+  useEffect(() => {
+    setTimeOfDay(getTimeOfDay());
+  }, []);
   const router = useRouter();
   const theme = THEMES[timeOfDay];
 
@@ -140,6 +145,7 @@ export default function GlobeScene() {
     const continent = detectContinent(lat, lng);
     if (continent && continent !== selectedContinent) {
       setSelectedContinent(continent);
+      setLockedRotation(globeRotationRef.current);
       const cam = CONTINENT_CAMERA[continent];
       if (cam) {
         const basePos = new THREE.Vector3(...latLngToVec3(cam.lat, cam.lng, cam.distance));
@@ -182,7 +188,7 @@ export default function GlobeScene() {
         {selectedContinent ? (
           <>
             <button
-              onClick={() => { setSelectedContinent(null); setCameraTarget(null); }}
+              onClick={() => { setSelectedContinent(null); setCameraTarget(null); setLockedRotation(0); }}
               style={{
                 color: timeOfDay === "day" ? "#2563eb" : "#93c5fd",
                 background: "none", border: "none", cursor: "pointer",
@@ -210,12 +216,11 @@ export default function GlobeScene() {
         style={{ width: "100%", height: "100%", position: "relative", zIndex: 1 }}
         gl={{ antialias: true, alpha: true }}
       >
-        <ambientLight intensity={theme.ambientLight} />
-        <directionalLight position={[5, 2, 5]} intensity={theme.dirLight} />
+        <ambientLight intensity={1.5} />
+        <directionalLight position={[5, 2, 5]} intensity={0.5} />
         <OrbitControls enableZoom={true} minDistance={1.2} maxDistance={4} enablePan={false} />
         <CameraController target={cameraTarget} />
         <Suspense fallback={null}>
-          <Atmosphere />
           <RotatingGlobe
             selectedContinent={selectedContinent}
             onGlobeClick={handleGlobeClick}
@@ -226,6 +231,7 @@ export default function GlobeScene() {
               continent={selectedContinent}
               radius={1}
               onSelectCountry={handleSelectCountry}
+              globeRotation={lockedRotation}
             />
           )}
         </Suspense>

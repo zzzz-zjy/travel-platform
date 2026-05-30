@@ -2,7 +2,7 @@
 
 import { useRef, useCallback, MutableRefObject } from "react";
 import { useFrame, useLoader, ThreeEvent } from "@react-three/fiber";
-import { Mesh, TextureLoader } from "three";
+import { Mesh, TextureLoader, Vector3 } from "three";
 
 interface Props {
   selectedContinent: string | null;
@@ -13,6 +13,8 @@ interface Props {
 export default function RotatingGlobe({ selectedContinent, onGlobeClick, rotationRef }: Props) {
   const meshRef = useRef<Mesh>(null);
   const texture = useLoader(TextureLoader, "/earth-texture.jpg");
+  const bumpMap = useLoader(TextureLoader, "/earth-bump.jpg");
+  const pointerDown = useRef<{ x: number; y: number; point: Vector3 } | null>(null);
 
   useFrame((_, delta) => {
     if (meshRef.current) {
@@ -23,11 +25,27 @@ export default function RotatingGlobe({ selectedContinent, onGlobeClick, rotatio
     }
   });
 
-  const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    if (!meshRef.current) return;
+  const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
+    pointerDown.current = { x: event.nativeEvent.clientX, y: event.nativeEvent.clientY, point: event.point.clone() };
+  }, []);
 
-    const localPoint = meshRef.current.worldToLocal(event.point.clone());
+  const handlePointerUp = useCallback((event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    if (!meshRef.current || !pointerDown.current) return;
+
+    const dx = event.nativeEvent.clientX - pointerDown.current.x;
+    const dy = event.nativeEvent.clientY - pointerDown.current.y;
+    const moved = Math.sqrt(dx * dx + dy * dy);
+
+    // Only treat as click if pointer barely moved (dragging = not a click)
+    if (moved > 4) {
+      pointerDown.current = null;
+      return;
+    }
+
+    const localPoint = meshRef.current.worldToLocal(pointerDown.current.point);
+    pointerDown.current = null;
+
     const x = localPoint.x;
     const y = Math.max(-1, Math.min(1, localPoint.y));
     const z = localPoint.z;
@@ -42,12 +60,12 @@ export default function RotatingGlobe({ selectedContinent, onGlobeClick, rotatio
   }, [onGlobeClick]);
 
   return (
-    <mesh ref={meshRef} onClick={handleClick}>
-      <sphereGeometry args={[1, 64, 64]} />
+    <mesh ref={meshRef} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
+      <sphereGeometry args={[1, 128, 128]} />
       <meshStandardMaterial
         map={texture}
-        roughness={0.65}
-        metalness={0.05}
+        roughness={0.8}
+        metalness={0.0}
       />
     </mesh>
   );

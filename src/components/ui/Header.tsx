@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Header() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  // Don't show header on globe homepage
   if (pathname === "/") return null;
+  if (pathname === "/login") return null;
 
   return (
     <header style={{
@@ -24,7 +26,7 @@ export default function Header() {
         }}>
           🌍 旅行攻略
         </Link>
-        <nav style={{ display: "flex", alignItems: "center", gap: 24 }}>
+        <nav style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <Link href="/guides" style={{
             fontSize: 14, fontWeight: 500,
             color: pathname.startsWith("/guides") ? "#2563eb" : "#4b5563",
@@ -32,12 +34,40 @@ export default function Header() {
           }}>
             攻略广场
           </Link>
+          <Link href="/my" style={{
+            fontSize: 14, fontWeight: 500,
+            color: pathname.startsWith("/my") ? "#2563eb" : "#4b5563",
+            textDecoration: "none",
+          }}>
+            我的攻略
+          </Link>
           <Link href="/guide/new" style={{
             background: "#2563eb", color: "white", padding: "8px 16px",
             borderRadius: 8, fontSize: 14, fontWeight: "bold", textDecoration: "none",
           }}>
-            ✨ 创建攻略
+            ✨ AI 定制
           </Link>
+
+          {session?.user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: 8, paddingLeft: 16, borderLeft: "1px solid #e5e7eb" }}>
+              <span style={{ fontSize: 13, color: "#374151" }}>
+                {session.user.name || session.user.email}
+              </span>
+              <button onClick={() => signOut()} style={{
+                fontSize: 12, color: "#9ca3af", background: "none", border: "none",
+                cursor: "pointer", padding: 0,
+              }}>
+                退出
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" style={{
+              fontSize: 13, color: "#6b7280", textDecoration: "none",
+              marginLeft: 8, paddingLeft: 16, borderLeft: "1px solid #e5e7eb",
+            }}>
+              登录
+            </Link>
+          )}
         </nav>
       </div>
     </header>

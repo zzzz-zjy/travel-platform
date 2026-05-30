@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getClientIp } from "@/lib/rate-limit";
+import { auth } from "@/lib/auth";
 
 export async function GET() {
   const guides = await prisma.guide.findMany({
+    where: { isSystem: true },
     include: {
       destinationCity: { include: { province: { include: { country: true } } } },
       days: { include: { items: true } },
@@ -15,8 +18,12 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
+  const ip = getClientIp(request);
+  const session = await auth();
   const guide = await prisma.guide.create({
     data: {
+      creatorIp: ip,
+      userId: (session?.user as any)?.id || null,
       title: body.title,
       destinationCityId: body.destinationCityId,
       totalDays: body.totalDays,

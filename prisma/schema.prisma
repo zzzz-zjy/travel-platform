@@ -90,6 +90,10 @@ model Guide {
   transportMode     String     @map("transport_mode")
   travelStyle       String     @map("travel_style")
   rawJson           String?    @map("raw_json")
+  isSystem          Boolean    @default(false) @map("is_system")
+  creatorIp         String?    @map("creator_ip")
+  userId            String?    @map("user_id")
+  user              User?      @relation(fields: [userId], references: [id])
   destinationCity   City       @relation(fields: [destinationCityId], references: [id])
   days              GuideDay[]
   createdAt         DateTime   @default(now()) @map("created_at")
@@ -127,4 +131,58 @@ model GuideItem {
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
   @@map("guide_items")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  phone         String?   @unique
+  phoneVerified DateTime? @map("phone_verified")
+  image         String?
+  accounts      Account[]
+  guides        Guide[]
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model RateLimit {
+  id    Int      @id @default(autoincrement())
+  ip    String
+  date  DateTime
+  count Int      @default(0)
+
+  @@unique([ip, date], name: "ipDate")
+  @@map("rate_limits")
 }
