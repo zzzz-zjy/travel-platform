@@ -42,12 +42,6 @@ export default function GuideWizard() {
         }),
       });
 
-      if (res.status === 429) {
-        setMessages((prev) => [...prev, { role: "assistant", content: "今日免费次数已用完（5次/天），请明天再来 🙏" }]);
-        setLoading(false);
-        return;
-      }
-
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let full = "";

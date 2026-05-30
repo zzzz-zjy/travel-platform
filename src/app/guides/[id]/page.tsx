@@ -1,10 +1,13 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import GuideDetail from "@/components/guides/GuideDetail";
 import { notFound } from "next/navigation";
 
-async function getGuide(id: number) {
-  return prisma.guide.findUnique({
-    where: { id },
+export default async function GuidePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const session = await auth();
+  const guide = await prisma.guide.findUnique({
+    where: { id: parseInt(id) },
     include: {
       destinationCity: { include: { province: { include: { country: true } } } },
       days: {
@@ -13,12 +16,8 @@ async function getGuide(id: number) {
       },
     },
   });
-}
-
-export default async function GuidePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const guide = await getGuide(parseInt(id));
   if (!guide) notFound();
   const serialized = JSON.parse(JSON.stringify(guide));
-  return <GuideDetail guide={serialized} />;
+  const isOwner = !guide.isSystem && (session?.user as any)?.id === guide.userId;
+  return <GuideDetail guide={serialized} isOwner={isOwner} />;
 }

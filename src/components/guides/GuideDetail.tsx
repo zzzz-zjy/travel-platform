@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 interface GuideWithDays {
   id: number;
@@ -23,15 +26,69 @@ interface GuideWithDays {
   }[];
 }
 
-export default function GuideDetail({ guide }: { guide: GuideWithDays }) {
+export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; isOwner?: boolean }) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(guide.title);
+  const [saved, setSaved] = useState(guide.title);
+
+  const saveTitle = async () => {
+    await fetch(`/api/guides/${guide.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    setSaved(title);
+    setEditing(false);
+  };
+
+  const deleteGuide = async () => {
+    if (!confirm("确定要删除这个攻略吗？此操作不可恢复。")) return;
+    await fetch(`/api/guides/${guide.id}`, { method: "DELETE" });
+    router.push("/my");
+  };
+
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
       <Link href="/guides" style={{ color: "#2563eb", textDecoration: "none", fontSize: 14 }}>
         ← 返回攻略广场
       </Link>
 
-      <div style={{ marginTop: 24 }}>
-        <h1 style={{ fontSize: 30, fontWeight: "bold", margin: 0 }}>{guide.title}</h1>
+      <div style={{ marginTop: 4 }}>
+        <Link href={`/explore/${guide.destinationCity?.province?.country?.slug || "cn"}`} style={{
+          color: "#2563eb", textDecoration: "none", fontSize: 13,
+        }}>
+          🗺️ 在地图上查看 {guide.destinationCity?.name || "目的地"}
+        </Link>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        {editing ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} style={{
+              fontSize: 30, fontWeight: "bold", border: "1px solid #d1d5db",
+              borderRadius: 8, padding: "4px 12px", flex: 1,
+            }} autoFocus />
+            <button onClick={saveTitle} style={{
+              padding: "8px 16px", background: "#2563eb", color: "white",
+              border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14,
+            }}>保存</button>
+            <button onClick={() => { setTitle(saved); setEditing(false); }} style={{
+              padding: "8px 16px", background: "#e5e7eb", border: "none",
+              borderRadius: 8, cursor: "pointer", fontSize: 14,
+            }}>取消</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 30, fontWeight: "bold", margin: 0 }}>{saved}</h1>
+            {isOwner && (
+              <button onClick={() => setEditing(true)} style={{
+                fontSize: 12, color: "#9ca3af", background: "none", border: "none",
+                cursor: "pointer", padding: "4px 8px",
+              }}>✏️ 编辑</button>
+            )}
+          </div>
+        )}
         <p style={{ color: "#666", marginTop: 8 }}>
           {guide.destinationCity.province.country.name} · {guide.destinationCity.province.name} · {guide.destinationCity.name}
         </p>
@@ -99,16 +156,82 @@ export default function GuideDetail({ guide }: { guide: GuideWithDays }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 32, display: "flex", gap: 12 }}>
+      <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap" }}>
         <Link href={`/guides/${guide.id}/chat`}
           style={{
             background: "#7c3aed", color: "white", padding: "12px 24px",
             borderRadius: 12, fontWeight: "bold", textDecoration: "none",
           }}>
-          AI 微调此攻略
+          💬 AI 微调
         </Link>
+        <FavoriteButton guideId={guide.id} />
+        <ShareButton guideId={guide.id} title={saved} />
+        {isOwner && (
+          <button onClick={deleteGuide} style={{
+            background: "#fee2e2", color: "#dc2626", padding: "12px 24px",
+            borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer",
+          }}>
+            🗑️ 删除
+          </button>
+        )}
       </div>
     </div>
+  );
+}
+
+function FavoriteButton({ guideId }: { guideId: number }) {
+  const { user, token } = useAuth();
+  const router = useRouter();
+  const [faved, setFaved] = useState(false);
+
+  const toggle = async () => {
+    if (!user) { router.push("/login"); return; }
+    const headers: any = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch("/api/favorites", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ guideId }),
+    });
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    const data = await res.json();
+    if (data.favorited !== undefined) setFaved(data.favorited);
+  };
+  return (
+    <button onClick={toggle} style={{
+      background: faved ? "#fef3c7" : "#f3f4f6", color: faved ? "#d97706" : "#4b5563",
+      padding: "12px 24px", borderRadius: 12, fontWeight: "bold",
+      border: "none", cursor: "pointer",
+    }}>
+      {faved ? "⭐ 已收藏" : "☆ 收藏"}
+    </button>
+  );
+}
+
+function ShareButton({ guideId, title }: { guideId: number; title: string }) {
+  const [copied, setCopied] = useState(false);
+  const share = () => {
+    const url = `${window.location.origin}/share/${guideId}`;
+    const text = `【旅行攻略】${title}\n${url}`;
+    if (navigator.share) {
+      navigator.share({ title, text, url });
+    } else {
+      navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  return (
+    <button onClick={share} style={{
+      background: copied ? "#d1fae5" : "#f3f4f6", color: copied ? "#059669" : "#4b5563",
+      padding: "12px 24px", borderRadius: 12, fontWeight: "bold",
+      border: "none", cursor: "pointer",
+    }}>
+      {copied ? "✅ 已复制" : "🔗 分享"}
+    </button>
   );
 }
 

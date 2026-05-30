@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model Continent {
@@ -95,6 +95,7 @@ model Guide {
   user              User?      @relation(fields: [userId], references: [id])
   destinationCity   City       @relation(fields: [destinationCityId], references: [id])
   days              GuideDay[]
+  favorites         Favorite[]
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")
 
@@ -142,6 +143,7 @@ model User {
   image         String?
   accounts      Account[]
   guides        Guide[]
+  favorites     Favorite[]
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -174,6 +176,18 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  guideId   Int      @map("guide_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guide     Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, guideId])
+  @@map("favorites")
 }
 
 model RateLimit {

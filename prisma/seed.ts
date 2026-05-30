@@ -1,10 +1,17 @@
 import { PrismaClient } from "@prisma/client";
 import { seedData } from "../src/lib/seed-data";
 
-import { PrismaPg } from "@prisma/adapter-pg";
+const url = process.env["DATABASE_URL"]!;
+const getPrisma = () => {
+  if (url.startsWith("file:")) {
+    const { PrismaLibSql } = require("@prisma/adapter-libsql");
+    return new PrismaClient({ adapter: new PrismaLibSql({ url }) });
+  }
+  const { PrismaPg } = require("@prisma/adapter-pg");
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+};
 
-const adapter = new PrismaPg({ connectionString: process.env["DATABASE_URL"]! });
-const prisma = new PrismaClient({ adapter });
+const prisma = getPrisma();
 
 async function main() {
   console.log("Seeding database...");

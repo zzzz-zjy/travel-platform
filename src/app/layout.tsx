@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
+import MapFAB from "@/components/ui/MapFAB";
 import Providers from "@/components/Providers";
 import "./globals.css";
 
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <Header />
           <main>{children}</main>
+          <MapFAB />
         </Providers>
       </body>
     </html>

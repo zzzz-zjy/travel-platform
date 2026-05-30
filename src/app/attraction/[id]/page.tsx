@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import HeroImage from "@/components/ui/HeroImage";
 
 async function getAttraction(id: number) {
   return prisma.attraction.findUnique({
@@ -39,25 +40,28 @@ export default async function AttractionPage({
         ← 返回 {attr.city.province.country.name} 地图
       </Link>
 
-      <div style={{ marginTop: 24 }}>
-        <span
-          style={{
-            fontSize: 13,
-            background: "#dbeafe",
-            color: "#1d4ed8",
-            padding: "4px 12px",
-            borderRadius: 9999,
-          }}
-        >
-          {CATEGORY_LABELS[attr.category] || attr.category}
-        </span>
-        <h1 style={{ fontSize: 30, fontWeight: "bold", marginTop: 12 }}>
-          {attr.name}
-        </h1>
-        <p style={{ color: "#666", marginTop: 8 }}>
-          {attr.city.province.name} · {attr.city.name} · ★{" "}
-          {attr.rating}
-        </p>
+      {/* Hero Image */}
+      <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", position: "relative" }}>
+        <HeroImage name={attr.name} query={attr.name} />
+        <div style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
+          background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
+          padding: "40px 24px 20px",
+        }}>
+          <span style={{
+            fontSize: 13, background: "rgba(255,255,255,0.2)",
+            color: "white", padding: "4px 12px", borderRadius: 9999,
+            backdropFilter: "blur(4px)",
+          }}>
+            {CATEGORY_LABELS[attr.category] || attr.category}
+          </span>
+          <h1 style={{ fontSize: 30, fontWeight: "bold", marginTop: 8, color: "white" }}>
+            {attr.name}
+          </h1>
+          <p style={{ color: "rgba(255,255,255,0.8)", marginTop: 4 }}>
+            {attr.city.province.name} · {attr.city.name} · ★ {attr.rating}
+          </p>
+        </div>
       </div>
 
       <div

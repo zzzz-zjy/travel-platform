@@ -1,6 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import OpenAI from "openai";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY!,
@@ -66,16 +65,6 @@ const SYSTEM_PROMPT = `你是一位专业的AI旅游规划师。你的任务是�
 - 只输出最终JSON，不要额外文字`;
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIp(request);
-  const { allowed, remaining } = await checkRateLimit(ip);
-
-  if (!allowed) {
-    return NextResponse.json(
-      { error: `今日免费次数已用完（5次/天），请明天再来`, remaining: 0 },
-      { status: 429 }
-    );
-  }
-
   const { messages } = await request.json();
 
   const response = await client.chat.completions.create({

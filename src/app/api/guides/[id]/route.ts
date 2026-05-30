@@ -19,3 +19,27 @@ export async function GET(
   if (!guide) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(guide);
 }
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  const body = await request.json();
+  const guide = await prisma.guide.update({
+    where: { id: parseInt(id) },
+    data: { title: body.title },
+  });
+  return NextResponse.json(guide);
+}
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+  await prisma.guideItem.deleteMany({ where: { guideDay: { guideId: parseInt(id) } } });
+  await prisma.guideDay.deleteMany({ where: { guideId: parseInt(id) } });
+  await prisma.guide.delete({ where: { id: parseInt(id) } });
+  return NextResponse.json({ success: true });
+}

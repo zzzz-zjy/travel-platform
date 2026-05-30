@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 interface GuideSummary {
   id: number;
@@ -15,6 +17,38 @@ interface GuideSummary {
 }
 
 const TRAVEL_STYLES = ["全部", "美食", "文化", "户外", "休闲", "摄影"];
+
+function FavBtn({ guideId }: { guideId: number }) {
+  const { user, token } = useAuth();
+  const router = useRouter();
+  const [faved, setFaved] = useState(false);
+
+  const toggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) { router.push("/login"); return; }
+    try {
+      const headers: any = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ guideId }),
+      });
+      const data = await res.json();
+      if (data.favorited !== undefined) setFaved(data.favorited);
+    } catch {}
+  };
+
+  return (
+    <span onClick={toggle} style={{
+      fontSize: 20, cursor: "pointer", userSelect: "none",
+      position: "absolute", bottom: 12, right: 12,
+    }} title="收藏">
+      {faved ? "⭐" : "☆"}
+    </span>
+  );
+}
 
 export default function GuideList({ guides }: { guides: GuideSummary[] }) {
   const [activeStyle, setActiveStyle] = useState("全部");
@@ -46,11 +80,11 @@ export default function GuideList({ guides }: { guides: GuideSummary[] }) {
           <Link key={guide.id} href={`/guides/${guide.id}`} style={{ textDecoration: "none", color: "inherit" }}>
             <div style={{
               border: "1px solid #e5e7eb", borderRadius: 12, padding: 20,
-              transition: "box-shadow 0.2s", cursor: "pointer"
+              transition: "box-shadow 0.2s", cursor: "pointer", position: "relative",
             }}>
-              <h3 style={{ fontSize: 18, fontWeight: "bold", margin: 0 }}>{guide.title}</h3>
+              <h3 style={{ fontSize: 18, fontWeight: "bold", margin: 0, paddingRight: 30 }}>{guide.title}</h3>
               <p style={{ color: "#666", fontSize: 14, marginTop: 4 }}>
-                {guide.destinationCity.province.country.name} · {guide.destinationCity.province.name} · {guide.destinationCity.name}
+                {guide.destinationCity.province.country.name} · {guide.destinationCity.name}
               </p>
               <div style={{ display: "flex", gap: 12, marginTop: 12, fontSize: 14, color: "#4b5563" }}>
                 <span>{guide.totalDays}天</span>
@@ -65,6 +99,7 @@ export default function GuideList({ guides }: { guides: GuideSummary[] }) {
                   {guide.travelStyle}
                 </span>
               </div>
+              <FavBtn guideId={guide.id} />
             </div>
           </Link>
         ))}
