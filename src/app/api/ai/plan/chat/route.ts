@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const client = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY!,
+  baseURL: "https://api.deepseek.com/v1",
+});
 
 const SYSTEM_PROMPT = `你是一位专业的AI旅游规划师。你的任务是通过对话收集用户需求，然后生成完整的旅游攻略。
 
@@ -75,14 +78,16 @@ export async function POST(request: NextRequest) {
 
   const { messages } = await request.json();
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const response = await client.chat.completions.create({
+    model: "deepseek-chat",
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: messages.map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...messages.map((m: { role: string; content: string }) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+    ],
     stream: true,
   });
 
@@ -90,10 +95,11 @@ export async function POST(request: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       let full = "";
-      for await (const event of response) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          full += event.delta.text;
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`));
+      for await (const chunk of response) {
+        const text = chunk.choices[0]?.delta?.content || "";
+        if (text) {
+          full += text;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
         }
       }
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, full })}\n\n`));

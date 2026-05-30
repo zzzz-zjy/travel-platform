@@ -1,7 +1,10 @@
 import { NextRequest } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const client = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY!,
+  baseURL: "https://api.deepseek.com/v1",
+});
 
 export async function POST(request: NextRequest) {
   const { messages, guideContext } = await request.json();
@@ -13,20 +16,23 @@ ${guideContext}
 用户会提出修改要求（如"太贵了""想多去几个景点""换便宜的住宿"等），请根据要求调整攻略并输出完整的新攻略 JSON。
 输出纯 JSON，不要用 markdown 代码块。格式与原始攻略一致。`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const response = await client.chat.completions.create({
+    model: "deepseek-chat",
     max_tokens: 4096,
-    system: systemPrompt,
-    messages: messages.map((m: any) => ({ role: m.role, content: m.content })),
+    messages: [
+      { role: "system", content: systemPrompt },
+      ...messages.map((m: any) => ({ role: m.role, content: m.content })),
+    ],
     stream: true,
   });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {
-      for await (const event of response) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`));
+      for await (const chunk of response) {
+        const text = chunk.choices[0]?.delta?.content || "";
+        if (text) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
         }
       }
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));

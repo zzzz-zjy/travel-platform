@@ -1,6 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const client = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY!,
+  baseURL: "https://api.deepseek.com/v1",
+});
 
 const SYSTEM_PROMPT = `你是一个专业的旅游规划师，精通中国和日本的热门旅游目的地。
 你需要根据用户的需求生成详细的旅游攻略。攻略必须包含每一天的具体时间安排、景点门票购买方式、交通建议和实用小贴士。
@@ -41,11 +44,13 @@ export async function generatePlan(params: PlanParams): Promise<ReadableStream> 
 
 请生成一份详细、实用的攻略。每个景点都要包含门票价格和购买方式。输出纯 JSON，不要用 markdown 代码块。`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+  const response = await client.chat.completions.create({
+    model: "deepseek-chat",
     max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMessage },
+    ],
     stream: true,
   });
 
@@ -53,10 +58,11 @@ export async function generatePlan(params: PlanParams): Promise<ReadableStream> 
   return new ReadableStream({
     async start(controller) {
       let buffer = "";
-      for await (const event of response) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          buffer += event.delta.text;
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`));
+      for await (const chunk of response) {
+        const text = chunk.choices[0]?.delta?.content || "";
+        if (text) {
+          buffer += text;
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
         }
       }
       controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, full: buffer })}\n\n`));
