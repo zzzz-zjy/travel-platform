@@ -1,0 +1,18 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest code
+        working-directory: /opt/travel-platform
+        run: |
+          git pull origin master
+          npm install
+          npx prisma generate
+          npm run build
+          pm2 restart travel-platform
