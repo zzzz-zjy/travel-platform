@@ -5,7 +5,7 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 const createPrisma = () => {
   const url = process.env.DATABASE_URL!;
   // Local SQLite (file:) or Turso (libsql://)
-  if (url.startsWith("file:") || url.startsWith("libsql://")) {
+  if (url.startsWith("file:") || url.startsWith("libsql://") || url.startsWith("https://")) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { PrismaLibSql } = require("@prisma/adapter-libsql");
     const options: Record<string, string> = { url };
