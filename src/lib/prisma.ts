@@ -4,10 +4,14 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 const createPrisma = () => {
   const url = process.env.DATABASE_URL!;
-  if (url.startsWith("file:")) {
+  // Local SQLite (file:) or Turso (libsql://)
+  if (url.startsWith("file:") || url.startsWith("libsql://")) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { PrismaLibSql } = require("@prisma/adapter-libsql");
-    return new PrismaClient({ adapter: new PrismaLibSql({ url }) } as any);
+    const options: Record<string, string> = { url };
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    if (authToken) options.authToken = authToken;
+    return new PrismaClient({ adapter: new PrismaLibSql(options) } as any);
   }
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { PrismaPg } = require("@prisma/adapter-pg");
