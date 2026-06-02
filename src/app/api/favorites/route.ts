@@ -14,6 +14,14 @@ export async function GET(request: NextRequest) {
   const userId = await getUserId(request);
   if (!userId) return NextResponse.json({ error: "未登录" }, { status: 401 });
 
+  const guideId = request.nextUrl.searchParams.get("guideId");
+  if (guideId) {
+    const fav = await prisma.favorite.findUnique({
+      where: { userId_guideId: { userId, guideId: parseInt(guideId) } },
+    });
+    return NextResponse.json({ favorited: !!fav });
+  }
+
   const favorites = await prisma.favorite.findMany({
     where: { userId },
     include: {

@@ -23,11 +23,14 @@ export default function MyPage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px" }}>
+      <Link href="/explore/cn" style={{ color: "#2563eb", textDecoration: "none", fontSize: 14, marginBottom: 16, display: "inline-block" }}>
+        ← 返回地图
+      </Link>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div style={{ display: "flex", gap: 4, background: "#f3f4f6", borderRadius: 10, padding: 4 }}>
           {[
             { key: "my", label: "📝 我的攻略", count: guides.length },
-            { key: "fav", label: "⭐ 我的收藏", count: 0 },
+            { key: "fav", label: "⭐ 我的收藏", count: guides.length },
           ].map((t: any) => (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
               padding: "10px 20px", borderRadius: 8, border: "none", cursor: "pointer",

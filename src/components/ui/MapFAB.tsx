@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 export default function MapFAB() {
   const pathname = usePathname();
-  if (pathname === "/" || pathname === "/login") return null;
+  if (pathname === "/" || pathname === "/login" || pathname.startsWith("/explore")) return null;
 
   return (
     <Link href="/" title="返回地球地图" style={{

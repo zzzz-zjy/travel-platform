@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -22,11 +22,24 @@ function FavBtn({ guideId }: { guideId: number }) {
   const { user, token } = useAuth();
   const router = useRouter();
   const [faved, setFaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user || !token) return;
+    fetch(`/api/favorites?guideId=${guideId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.favorited !== undefined) setFaved(d.favorited); })
+      .catch(() => {});
+  }, [guideId, user, token]);
 
   const toggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) { router.push("/login"); return; }
+    if (loading) return;
+    setLoading(true);
     try {
       const headers: any = { "Content-Type": "application/json" };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -35,15 +48,22 @@ function FavBtn({ guideId }: { guideId: number }) {
         headers,
         body: JSON.stringify({ guideId }),
       });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       const data = await res.json();
       if (data.favorited !== undefined) setFaved(data.favorited);
-    } catch {}
+    } catch {} finally {
+      setLoading(false);
+    }
   };
 
   return (
     <span onClick={toggle} style={{
       fontSize: 20, cursor: "pointer", userSelect: "none",
       position: "absolute", bottom: 12, right: 12,
+      opacity: loading ? 0.5 : 1,
     }} title="收藏">
       {faved ? "⭐" : "☆"}
     </span>

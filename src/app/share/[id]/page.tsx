@@ -10,7 +10,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
       destinationCity: { include: { province: { include: { country: true } } } },
       days: {
         orderBy: { dayNumber: "asc" },
-        include: { items: { orderBy: { timeSlot: "asc" } } },
+        include: { items: { orderBy: { timeSlot: "asc" }, include: { attraction: true } } },
       },
     },
   });
@@ -47,7 +47,7 @@ export default async function SharePage({ params }: { params: Promise<{ id: stri
                     {item.timeSlot}
                   </span>
                   <div>
-                    <div style={{ fontWeight: 600 }}>{item.customSpot}</div>
+                    <div style={{ fontWeight: 600 }}>{item.attraction?.name || item.customSpot}</div>
                     {item.tips && <div style={{ fontSize: 13, color: "#6b7280" }}>{item.tips}</div>}
                   </div>
                 </div>

@@ -20,17 +20,27 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const ip = getClientIp(request);
   const session = await auth();
+
+  let cityId = body.destinationCityId;
+  if (!cityId && body.destinationCityName) {
+    const city = await prisma.city.findFirst({
+      where: { name: { contains: body.destinationCityName } },
+    });
+    if (city) cityId = city.id;
+  }
+  if (!cityId) cityId = 1; // fallback to Beijing
+
   const guide = await prisma.guide.create({
     data: {
       creatorIp: ip,
       userId: (session?.user as any)?.id || null,
       title: body.title,
-      destinationCityId: body.destinationCityId,
+      destinationCityId: cityId,
       totalDays: body.totalDays,
       budgetAmount: body.budgetAmount,
       transportMode: body.transportMode,
       travelStyle: body.travelStyle,
-      rawJson: body.rawJson ? JSON.stringify(body.rawJson) : null,
+      rawJson: body.rawJson || null,
       days: {
         create: body.days.map((day: any) => ({
           dayNumber: day.dayNumber,

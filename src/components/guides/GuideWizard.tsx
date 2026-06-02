@@ -8,36 +8,37 @@ interface Message {
   content: string;
 }
 
-export default function GuideWizard() {
+export default function GuideWizard({ initialPrompt }: { initialPrompt?: string }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"greeting" | "asking" | "generating" | "done">("greeting");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const initialSent = useRef(false);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const send = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg: Message = { role: "user", content: input };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
-    setLoading(true);
-
-    if (phase === "greeting") {
-      // First message: parse destination from input
+  useEffect(() => {
+    if (initialPrompt && !initialSent.current) {
+      initialSent.current = true;
+      const userMsg: Message = { role: "user", content: initialPrompt };
+      setMessages([userMsg]);
       setPhase("asking");
+      sendWith(userMsg);
     }
+  }, [initialPrompt]);
 
+  const streamChat = async (msgs: Message[]) => {
+    setLoading(true);
     try {
       const res = await fetch("/api/ai/plan/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+          messages: msgs.map((m) => ({ role: m.role, content: m.content })),
           phase,
         }),
       });
@@ -73,7 +74,6 @@ export default function GuideWizard() {
         }
       }
 
-      // Try to parse final JSON and save
       if (full.includes('"title"') && full.includes('"days"')) {
         setPhase("done");
         try {
@@ -86,7 +86,7 @@ export default function GuideWizard() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               title: parsed.title,
-              destinationCityId: 1, // fallback
+              destinationCityName: parsed.city || null,
               totalDays: parsed.days?.length || 3,
               budgetAmount: parsed.totalBudget || 3000,
               transportMode: parsed.transport || "地铁+网约车",
@@ -116,6 +116,20 @@ export default function GuideWizard() {
       setMessages((prev) => [...prev, { role: "assistant", content: "出错了，请重试。" }]);
     }
     setLoading(false);
+  };
+
+  const sendWith = async (userMsg: Message) => {
+    const updated = [...messages, userMsg];
+    setMessages(updated);
+    if (phase === "greeting") setPhase("asking");
+    await streamChat(updated);
+  };
+
+  const send = async () => {
+    if (!input.trim() || loading) return;
+    const userMsg: Message = { role: "user", content: input };
+    setInput("");
+    await sendWith(userMsg);
   };
 
   return (

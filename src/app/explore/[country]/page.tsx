@@ -7,7 +7,6 @@ async function getAttractions(country: string) {
     where: { city: { province: { country: { slug: country } } } },
     include: { city: { include: { province: { include: { country: true } } } } },
     orderBy: { rating: "desc" },
-    take: 50,
   });
 }
 
@@ -18,7 +17,16 @@ export default async function ExploreCountryPage({
 }) {
   const { country } = await params;
   const attractions = await getAttractions(country);
-  const serialized = JSON.parse(JSON.stringify(attractions));
+  const serialized = attractions.map((a) => ({
+    id: a.id,
+    name: a.name,
+    lat: a.lat,
+    lng: a.lng,
+    category: a.category,
+    rating: a.rating,
+    ticketInfo: a.ticketInfo || "",
+    city: { name: a.city.name, province: { name: a.city.province.name } },
+  }));
 
   const countryName =
     attractions[0]?.city?.province?.country?.name || country.toUpperCase();

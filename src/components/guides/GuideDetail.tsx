@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -183,28 +183,46 @@ function FavoriteButton({ guideId }: { guideId: number }) {
   const { user, token } = useAuth();
   const router = useRouter();
   const [faved, setFaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user || !token) return;
+    fetch(`/api/favorites?guideId=${guideId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => { if (d.favorited !== undefined) setFaved(d.favorited); })
+      .catch(() => {});
+  }, [guideId, user, token]);
 
   const toggle = async () => {
     if (!user) { router.push("/login"); return; }
-    const headers: any = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    const res = await fetch("/api/favorites", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ guideId }),
-    });
-    if (res.status === 401) {
-      router.push("/login");
-      return;
+    if (loading) return;
+    setLoading(true);
+    try {
+      const headers: any = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ guideId }),
+      });
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      const data = await res.json();
+      if (data.favorited !== undefined) setFaved(data.favorited);
+    } catch {} finally {
+      setLoading(false);
     }
-    const data = await res.json();
-    if (data.favorited !== undefined) setFaved(data.favorited);
   };
   return (
-    <button onClick={toggle} style={{
+    <button onClick={toggle} disabled={loading} style={{
       background: faved ? "#fef3c7" : "#f3f4f6", color: faved ? "#d97706" : "#4b5563",
       padding: "12px 24px", borderRadius: 12, fontWeight: "bold",
-      border: "none", cursor: "pointer",
+      border: "none", cursor: loading ? "default" : "pointer",
+      opacity: loading ? 0.6 : 1,
     }}>
       {faved ? "⭐ 已收藏" : "☆ 收藏"}
     </button>

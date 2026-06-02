@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import HeroImage from "@/components/ui/HeroImage";
+import AttractionActions from "@/components/ui/AttractionActions";
 
 async function getAttraction(id: number) {
   return prisma.attraction.findUnique({
@@ -42,7 +43,7 @@ export default async function AttractionPage({
 
       {/* Hero Image */}
       <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", position: "relative" }}>
-        <HeroImage name={attr.name} query={attr.name} />
+        <HeroImage name={attr.name} query={attr.name} category={attr.category} />
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
           background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
@@ -108,23 +109,14 @@ export default async function AttractionPage({
         </div>
       </div>
 
-      <div style={{ marginTop: 32 }}>
-        <Link
-          href={`/guide/new?attraction=${attr.id}`}
-          style={{
-            display: "inline-block",
-            background: "#2563eb",
-            color: "white",
-            padding: "12px 32px",
-            borderRadius: 12,
-            fontWeight: "bold",
-            textDecoration: "none",
-            fontSize: 16,
-          }}
-        >
-          ✨ AI 定制包含此景点的攻略
-        </Link>
-      </div>
+      <AttractionActions
+        attraction={{
+          id: attr.id,
+          name: attr.name,
+          cityName: attr.city.name,
+          provinceName: attr.city.province.name,
+        }}
+      />
     </div>
   );
 }
