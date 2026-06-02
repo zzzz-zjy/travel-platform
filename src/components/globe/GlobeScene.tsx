@@ -135,8 +135,11 @@ export default function GlobeScene() {
   const globeRotationRef = useRef(0);
 
   // Detect local time on client-side only (avoids SSR timezone mismatch)
+  // Re-check every 60s so background transitions without page refresh
   useEffect(() => {
     setTimeOfDay(getTimeOfDay());
+    const interval = setInterval(() => setTimeOfDay(getTimeOfDay()), 60_000);
+    return () => clearInterval(interval);
   }, []);
   const router = useRouter();
   const theme = THEMES[timeOfDay];
