@@ -3,9 +3,12 @@ import { seedData } from "../src/lib/seed-data";
 
 const url = process.env["DATABASE_URL"]!;
 const getPrisma = () => {
-  if (url.startsWith("file:")) {
+  if (url.startsWith("file:") || url.startsWith("libsql://") || url.startsWith("https://")) {
     const { PrismaLibSql } = require("@prisma/adapter-libsql");
-    return new PrismaClient({ adapter: new PrismaLibSql({ url }) });
+    const options: Record<string, string> = { url };
+    const authToken = process.env["TURSO_AUTH_TOKEN"];
+    if (authToken) options.authToken = authToken;
+    return new PrismaClient({ adapter: new PrismaLibSql(options) });
   }
   const { PrismaPg } = require("@prisma/adapter-pg");
   return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
