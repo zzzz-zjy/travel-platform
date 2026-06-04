@@ -2,11 +2,18 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SCENARIOS, getScenario } from "@/lib/scenarios";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
+
+const PERSONAS = [
+  { key: "serious", label: "🎓 严谨干货", desc: "专业详尽的攻略信息" },
+  { key: "humorous", label: "😎 幽默闲聊", desc: "轻松有趣的旅行建议" },
+  { key: "minimal", label: "🤫 极简安静", desc: "言简意赅，直奔主题" },
+];
 
 export default function GuideWizard({ initialPrompt }: { initialPrompt?: string }) {
   const router = useRouter();
@@ -14,6 +21,9 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"greeting" | "asking" | "generating" | "done">("greeting");
+  const [persona, setPersona] = useState("serious");
+  const [mode, setMode] = useState<"balanced" | "compact" | "relaxed">("balanced");
+  const [regenerating, setRegenerating] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
 
@@ -31,7 +41,7 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
     }
   }, [initialPrompt]);
 
-  const streamChat = async (msgs: Message[]) => {
+  const streamChat = async (msgs: Message[], extra?: { persona?: string; mode?: string }) => {
     setLoading(true);
     try {
       const res = await fetch("/api/ai/plan/chat", {
@@ -40,6 +50,8 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
         body: JSON.stringify({
           messages: msgs.map((m) => ({ role: m.role, content: m.content })),
           phase,
+          persona: extra?.persona || persona,
+          mode: extra?.mode || mode,
         }),
       });
 
@@ -116,6 +128,7 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
       setMessages((prev) => [...prev, { role: "assistant", content: "出错了，请重试。" }]);
     }
     setLoading(false);
+    setRegenerating(false);
   };
 
   const sendWith = async (userMsg: Message) => {
@@ -132,6 +145,29 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
     await sendWith(userMsg);
   };
 
+  const handleScenarioClick = (key: string) => {
+    const s = getScenario(key);
+    if (!s) return;
+    const scenarioMsg: Message = {
+      role: "user",
+      content: `使用"${s.name}"场景模式。${s.promptAddition}`,
+    };
+    setInput("");
+    sendWith(scenarioMsg);
+  };
+
+  const handleModeSwitch = async (newMode: "compact" | "balanced" | "relaxed") => {
+    if (regenerating) return;
+    setMode(newMode);
+    setRegenerating(true);
+    const modeLabels = { compact: "紧凑", balanced: "适中", relaxed: "松弛" };
+    const modeMsg: Message = {
+      role: "user",
+      content: `请把行程切换为${modeLabels[newMode]}节奏模式重新生成。${newMode === "compact" ? "每天安排更多景点，时间紧凑一点。" : newMode === "relaxed" ? "减少每天的景点数量，留充足的休息和自由探索时间。" : "保持适中节奏。"}`,
+    };
+    await sendWith(modeMsg);
+  };
+
   return (
     <div style={{ maxWidth: 700, margin: "0 auto" }}>
       <div style={{
@@ -140,10 +176,44 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
       }}>
         {/* Header */}
         <div style={{ padding: 16, borderBottom: "1px solid #e5e7eb", background: "#f8fafc" }}>
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>🤖 AI 旅行规划师</h2>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
-            告诉我你想去哪里，我会帮你定制完美行程
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>🤖 AI 旅行规划师</h2>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
+                告诉我你想去哪里，我会帮你定制完美行程
+              </p>
+            </div>
+            {/* AI 风格选择 */}
+            <div style={{ display: "flex", gap: 2 }}>
+              {PERSONAS.map((p) => (
+                <button key={p.key} onClick={() => setPersona(p.key)}
+                  title={p.desc}
+                  style={{
+                    padding: "4px 8px", borderRadius: 6, fontSize: 11,
+                    border: persona === p.key ? "1px solid #2563eb" : "1px solid transparent",
+                    background: persona === p.key ? "#eff6ff" : "transparent",
+                    color: persona === p.key ? "#2563eb" : "#9ca3af",
+                    cursor: "pointer", transition: "all 0.15s",
+                  }}>{p.label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* 场景快捷选择 */}
+          {messages.length === 0 && (
+            <div style={{ display: "flex", gap: 4, marginTop: 10, flexWrap: "wrap" }}>
+              {SCENARIOS.map((s) => (
+                <button key={s.key} onClick={() => handleScenarioClick(s.key)} style={{
+                  padding: "5px 10px", borderRadius: 99, fontSize: 12,
+                  border: "1px solid #e5e7eb", background: "white",
+                  color: "#6b7280", cursor: "pointer",
+                  transition: "all 0.15s",
+                }} title={s.desc}>
+                  {s.icon} {s.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Messages */}
@@ -152,7 +222,7 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
             <div style={{ textAlign: "center", color: "#94a3b8", marginTop: 60 }}>
               <p style={{ fontSize: 28, margin: 0 }}>🌍</p>
               <p style={{ marginTop: 8, fontSize: 14 }}>
-                在下方输入你想去的目的地开始规划
+                在下方输入你想去的目的地开始规划，或选择上方场景模式
               </p>
             </div>
           )}
@@ -176,30 +246,52 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
         </div>
 
         {/* Input */}
-        <div style={{ padding: 12, borderTop: "1px solid #e5e7eb", display: "flex", gap: 8 }}>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && send()}
-            placeholder={phase === "done" ? "攻略已生成" : "输入你的需求..."}
-            disabled={loading || phase === "done"}
-            style={{
-              flex: 1, padding: "10px 14px", border: "1px solid #d1d5db",
-              borderRadius: 10, fontSize: 14, outline: "none",
-            }}
-          />
-          <button
-            onClick={send}
-            disabled={loading || !input.trim() || phase === "done"}
-            style={{
-              background: loading ? "#94a3b8" : "#2563eb",
-              color: "white", padding: "10px 20px", border: "none",
-              borderRadius: 10, fontWeight: 600, fontSize: 14,
-              cursor: loading ? "not-allowed" : "pointer",
-            }}
-          >
-            发送
-          </button>
+        <div style={{ padding: 12, borderTop: "1px solid #e5e7eb" }}>
+          {/* 紧凑/松弛切换（生成完成后显示） */}
+          {phase === "done" && (
+            <div style={{ display: "flex", gap: 6, marginBottom: 10, justifyContent: "center" }}>
+              {(["compact", "balanced", "relaxed"] as const).map((m) => (
+                <button key={m} onClick={() => handleModeSwitch(m)}
+                  disabled={regenerating}
+                  style={{
+                    padding: "5px 14px", borderRadius: 99, fontSize: 12, fontWeight: 600,
+                    border: mode === m ? "2px solid #2563eb" : "2px solid #e5e7eb",
+                    background: mode === m ? "#eff6ff" : "white",
+                    color: mode === m ? "#2563eb" : "#6b7280",
+                    cursor: regenerating ? "not-allowed" : "pointer",
+                    opacity: regenerating ? 0.6 : 1,
+                    transition: "all 0.15s",
+                  }}>
+                  {m === "compact" ? "🏃 紧凑" : m === "relaxed" ? "🚶 松弛" : "🎯 适中"}
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              placeholder={phase === "done" ? "攻略已生成，可切换到其他模式" : loading ? "AI 正在思考..." : "输入你的需求..."}
+              disabled={loading || regenerating}
+              style={{
+                flex: 1, padding: "10px 14px", border: "1px solid #d1d5db",
+                borderRadius: 10, fontSize: 14, outline: "none",
+              }}
+            />
+            <button
+              onClick={send}
+              disabled={loading || !input.trim()}
+              style={{
+                background: loading ? "#94a3b8" : "#2563eb",
+                color: "white", padding: "10px 20px", border: "none",
+                borderRadius: 10, fontWeight: 600, fontSize: 14,
+                cursor: loading ? "not-allowed" : "pointer",
+              }}
+            >
+              发送
+            </button>
+          </div>
         </div>
       </div>
     </div>

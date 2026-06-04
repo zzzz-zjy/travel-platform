@@ -1,5 +1,8 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+
+const AI_DAILY_LIMIT = 30;
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY!,
@@ -7,6 +10,11 @@ const client = new OpenAI({
 });
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const { allowed, remaining } = await checkRateLimit(ip, AI_DAILY_LIMIT);
+  if (!allowed) {
+    return Response.json({ error: "今日AI请求次数已用完，请明天再试" }, { status: 429 });
+  }
   const { messages, guideContext } = await request.json();
 
   const systemPrompt = `你是一个旅游攻略调整助手。以下是用户当前的攻略：

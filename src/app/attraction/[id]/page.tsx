@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import HeroImage from "@/components/ui/HeroImage";
 import AttractionActions from "@/components/ui/AttractionActions";
+import { AttractionStatusClient } from "@/components/ui/RealtimeBadge";
 
 async function getAttraction(id: number) {
   return prisma.attraction.findUnique({
@@ -49,6 +50,9 @@ export default async function AttractionPage({
           background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
           padding: "40px 24px 20px",
         }}>
+          <div style={{
+          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+        }}>
           <span style={{
             fontSize: 13, background: "rgba(255,255,255,0.2)",
             color: "white", padding: "4px 12px", borderRadius: 9999,
@@ -56,6 +60,8 @@ export default async function AttractionPage({
           }}>
             {CATEGORY_LABELS[attr.category] || attr.category}
           </span>
+          <AttractionStatusClient spotName={attr.name} spotId={attr.id} />
+        </div>
           <h1 style={{ fontSize: 30, fontWeight: "bold", marginTop: 8, color: "white" }}>
             {attr.name}
           </h1>

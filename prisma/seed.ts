@@ -1,3 +1,9 @@
+import dotenv from "dotenv";
+if (!process.env.VERCEL) {
+  dotenv.config({ path: ".env.local", override: false });
+  dotenv.config({ path: ".env", override: false });
+}
+
 import { PrismaClient } from "@prisma/client";
 import { seedData } from "../src/lib/seed-data";
 

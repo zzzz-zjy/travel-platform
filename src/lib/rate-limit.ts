@@ -1,12 +1,12 @@
 import { prisma } from "./prisma";
 
-const DAILY_LIMIT = 5;
-
-export async function checkRateLimit(ip: string): Promise<{ allowed: boolean; remaining: number }> {
+export async function checkRateLimit(
+  ip: string,
+  dailyLimit: number = 5,
+): Promise<{ allowed: boolean; remaining: number }> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Find or create today's record for this IP
   let record = await prisma.rateLimit.findUnique({
     where: { ipDate: { ip, date: today } },
   });
@@ -17,7 +17,7 @@ export async function checkRateLimit(ip: string): Promise<{ allowed: boolean; re
     });
   }
 
-  const remaining = DAILY_LIMIT - record.count;
+  const remaining = dailyLimit - record.count;
 
   if (remaining <= 0) {
     return { allowed: false, remaining: 0 };

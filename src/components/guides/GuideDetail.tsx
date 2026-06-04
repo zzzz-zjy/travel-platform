@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import BudgetBreakdown from "./BudgetBreakdown";
+import QuickActions from "./QuickActions";
+import ExportButton from "./ExportButton";
+import { SpotStatusBadge, WeatherAlertBanner } from "@/components/ui/RealtimeBadge";
 
 interface GuideWithDays {
   id: number;
@@ -49,7 +53,7 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
   };
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px" }}>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 80px" }}>
       <Link href="/guides" style={{ color: "#2563eb", textDecoration: "none", fontSize: 14 }}>
         ← 返回攻略广场
       </Link>
@@ -61,6 +65,13 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
           🗺️ 在地图上查看 {guide.destinationCity?.name || "目的地"}
         </Link>
       </div>
+
+      {/* 天气预警 */}
+      {guide.destinationCity?.name && (
+        <div style={{ marginTop: 12 }}>
+          <WeatherAlertBanner cityName={guide.destinationCity.name} />
+        </div>
+      )}
 
       <div style={{ marginTop: 16 }}>
         {editing ? (
@@ -100,7 +111,11 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
         </div>
       </div>
 
-      <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* 快捷操作按钮 */}
+      <QuickActions guideId={guide.id} guideTitle={saved} />
+
+      {/* 按天展示行程 */}
+      <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 24 }}>
         {guide.days.map((day) => (
           <div key={day.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden" }}>
             <div style={{ background: "#f9fafb", padding: "12px 24px", borderBottom: "1px solid #e5e7eb" }}>
@@ -119,27 +134,31 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
                       {item.timeSlot}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: "bold" }}>
+                      <div style={{ fontWeight: "bold", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                         {item.attraction ? (
                           <Link href={`/attraction/${item.attraction.id}`}
                             style={{ color: "#2563eb", textDecoration: "none" }}>
                             {item.attraction.name}
                           </Link>
                         ) : (
-                          item.customSpot
+                          <span>{item.customSpot}</span>
                         )}
+                        <SpotStatusBadge
+                          spotName={item.attraction?.name || item.customSpot || ""}
+                          spotId={item.attraction?.id}
+                        />
                       </div>
                       <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>
                         约 {item.durationMin} 分钟
                       </div>
                       {item.ticketReminder && (
                         <div style={{ fontSize: 13, color: "#d97706", marginTop: 4 }}>
-                          {item.ticketReminder}
+                          🎫 {item.ticketReminder}
                         </div>
                       )}
                       {item.tips && (
                         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
-                          {item.tips}
+                          💡 {item.tips}
                         </div>
                       )}
                     </div>
@@ -156,7 +175,15 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
         ))}
       </div>
 
-      <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap" }}>
+      {/* 预算明细面板 */}
+      <BudgetBreakdown
+        budgetAmount={guide.budgetAmount}
+        days={guide.days}
+        totalDays={guide.totalDays}
+      />
+
+      {/* 底部操作栏 */}
+      <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         <Link href={`/guides/${guide.id}/chat`}
           style={{
             background: "#7c3aed", color: "white", padding: "12px 24px",
@@ -164,8 +191,22 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
           }}>
           💬 AI 微调
         </Link>
+        <Link href={`/guides/${guide.id}/packing`}
+          style={{
+            background: "#059669", color: "white", padding: "12px 24px",
+            borderRadius: 12, fontWeight: "bold", textDecoration: "none",
+          }}>
+          🎒 行李清单
+        </Link>
+        <Link href={`/guides/${guide.id}/travelogue`}
+          style={{
+            background: "#d97706", color: "white", padding: "12px 24px",
+            borderRadius: 12, fontWeight: "bold", textDecoration: "none",
+          }}>
+          📖 生成游记
+        </Link>
+        <ExportButton title={saved} />
         <FavoriteButton guideId={guide.id} />
-        <ShareButton guideId={guide.id} title={saved} />
         {isOwner && (
           <button onClick={deleteGuide} style={{
             background: "#fee2e2", color: "#dc2626", padding: "12px 24px",
@@ -225,30 +266,6 @@ function FavoriteButton({ guideId }: { guideId: number }) {
       opacity: loading ? 0.6 : 1,
     }}>
       {faved ? "⭐ 已收藏" : "☆ 收藏"}
-    </button>
-  );
-}
-
-function ShareButton({ guideId, title }: { guideId: number; title: string }) {
-  const [copied, setCopied] = useState(false);
-  const share = () => {
-    const url = `${window.location.origin}/share/${guideId}`;
-    const text = `【旅行攻略】${title}\n${url}`;
-    if (navigator.share) {
-      navigator.share({ title, text, url });
-    } else {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-  return (
-    <button onClick={share} style={{
-      background: copied ? "#d1fae5" : "#f3f4f6", color: copied ? "#059669" : "#4b5563",
-      padding: "12px 24px", borderRadius: 12, fontWeight: "bold",
-      border: "none", cursor: "pointer",
-    }}>
-      {copied ? "✅ 已复制" : "🔗 分享"}
     </button>
   );
 }

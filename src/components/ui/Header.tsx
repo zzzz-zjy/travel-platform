@@ -38,10 +38,10 @@ export default function Header() {
   return (
     <header style={{ height: 64, borderBottom: "1px solid #e5e7eb", background: "rgba(255,255,255,0.95)", backdropFilter: "blur(8px)", position: "sticky", top: 0, zIndex: 50 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link href="/" style={{ fontWeight: "bold", fontSize: 20, color: "#2563eb", textDecoration: "none", flexShrink: 0 }}>🌍 旅行攻略</Link>
+        <Link href="/" style={{ fontWeight: "bold", fontSize: 18, color: "#2563eb", textDecoration: "none", flexShrink: 0 }}>🌍 旅行攻略</Link>
 
-        <div ref={ref} style={{ position: "relative", flex: 1, maxWidth: 360, margin: "0 24px" }}>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && search) router.push(`/explore/cn?q=${encodeURIComponent(search)}`); }} placeholder="搜索景点、城市、攻略..." style={{ width: "100%", padding: "8px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+        <div ref={ref} style={{ position: "relative", flex: 1, maxWidth: 300, margin: "0 16px" }}>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && search) router.push(`/explore/cn?q=${encodeURIComponent(search)}`); }} placeholder="搜索景点、城市..." style={{ width: "100%", padding: "8px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" }} />
           {open && results && (
             <div style={{ position: "absolute", top: 42, left: 0, right: 0, background: "white", borderRadius: 12, boxShadow: "0 10px 40px rgba(0,0,0,0.15)", maxHeight: 400, overflowY: "auto", zIndex: 100, padding: 8 }}>
               {results.attractions?.length === 0 && results.guides?.length === 0 && <p style={{ padding: 16, color: "#9ca3af", fontSize: 14, textAlign: "center" }}>无结果</p>}
@@ -51,17 +51,19 @@ export default function Header() {
           )}
         </div>
 
-        <nav style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <Link href="/guides" style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", color: pathname.startsWith("/guides") ? "#2563eb" : "#4b5563", textDecoration: "none" }}>攻略广场</Link>
-          <Link href="/my" style={{ fontSize: 14, fontWeight: 500, whiteSpace: "nowrap", color: pathname.startsWith("/my") ? "#2563eb" : "#4b5563", textDecoration: "none" }}>我的攻略</Link>
+        <nav style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/guides" style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", color: pathname.startsWith("/guides") ? "#2563eb" : "#4b5563", textDecoration: "none" }}>攻略广场</Link>
+          <Link href="/inspire" style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", color: pathname.startsWith("/inspire") ? "#2563eb" : "#4b5563", textDecoration: "none" }}>灵感发现</Link>
+          <Link href="/my" style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", color: pathname.startsWith("/my") ? "#2563eb" : "#4b5563", textDecoration: "none" }}>我的</Link>
+          <Link href="/pricing" style={{ fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", color: pathname.startsWith("/pricing") ? "#2563eb" : "#4b5563", textDecoration: "none" }}>定价</Link>
           <Link href="/guide/new" style={{ background: "#2563eb", color: "white", padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: "bold", textDecoration: "none", whiteSpace: "nowrap" }}>✨ AI 定制</Link>
           {user ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12, borderLeft: "1px solid #e5e7eb" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 8, borderLeft: "1px solid #e5e7eb" }}>
               <span style={{ fontSize: 12, color: "#374151" }}>{user.name || user.phone}</span>
               <button onClick={logout} style={{ fontSize: 12, color: "#9ca3af", background: "none", border: "none", cursor: "pointer", padding: 0 }}>退出</button>
             </div>
           ) : (
-            <Link href="/login" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none", paddingLeft: 12, borderLeft: "1px solid #e5e7eb", whiteSpace: "nowrap" }}>登录</Link>
+            <Link href="/login" style={{ fontSize: 13, color: "#6b7280", textDecoration: "none", paddingLeft: 8, borderLeft: "1px solid #e5e7eb", whiteSpace: "nowrap" }}>登录</Link>
           )}
         </nav>
       </div>
