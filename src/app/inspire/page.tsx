@@ -25,6 +25,8 @@ interface Recommendation {
 export default function InspirePage() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
+  const [departureCity, setDepartureCity] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
   const [region, setRegion] = useState<"domestic" | "international">("domestic");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Recommendation[]>([]);
@@ -41,7 +43,7 @@ export default function InspirePage() {
       const res = await fetch("/api/ai/inspire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interests: selected, region }),
+        body: JSON.stringify({ interests: selected, region, departureCity, departureDate }),
       });
       const data = await res.json();
       setResults(data.recommendations || []);
@@ -52,7 +54,11 @@ export default function InspirePage() {
   };
 
   const explore = (city: string) => {
-    router.push(`/guide/new?q=${encodeURIComponent(`我想去${city}旅行`)}`);
+    const params = new URLSearchParams();
+    params.set("q", `我想去${city}旅行`);
+    if (departureCity) params.set("departureCity", departureCity);
+    if (departureDate) params.set("departureDate", departureDate);
+    router.push(`/guide/new?${params.toString()}`);
   };
 
   const scoreColor = (score: number) =>
@@ -85,6 +91,16 @@ export default function InspirePage() {
           color: region === "international" ? "#2563eb" : "#6b7280",
           cursor: "pointer", transition: "all 0.15s",
         }}>🌏 国外</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 20 }}>
+        <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>从</span>
+        <input placeholder="出发城市" value={departureCity} onChange={(e) => setDepartureCity(e.target.value)}
+          style={{ padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, width: 110, outline: "none" }} />
+        <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>出发</span>
+        <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)}
+          style={{ padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, outline: "none" }} />
+        <span style={{ fontSize: 11, color: "#9ca3af" }}>可选</span>
       </div>
 
       {/* 偏好选择 */}

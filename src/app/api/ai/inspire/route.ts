@@ -14,8 +14,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "今日请求次数已用完" }, { status: 429 });
   }
 
-  const { interests, visitedCities, region } = await request.json();
-
+  const { interests, visitedCities, region, departureCity, departureDate } = await request.json();
   const visitedStr = visitedCities?.length
     ? `用户已去过：${visitedCities.join("、")}，请避开这些城市`
     : "";
@@ -48,7 +47,7 @@ export async function POST(request: NextRequest) {
       { role: "system", content: systemPrompt },
       {
         role: "user",
-        content: `用户偏好：${userInterests}。${visitedStr}${regionHint}请推荐3个冷门旅行目的地。输出JSON数组。`,
+        content: `用户偏好：${userInterests}。${visitedStr}${regionHint}${departureCity ? `出发地：${departureCity}。` : ""}${departureDate ? `计划出发日期：${departureDate}。` : ""}请推荐3个冷门旅行目的地。输出JSON数组。`,
       },
     ],
     stream: false,
