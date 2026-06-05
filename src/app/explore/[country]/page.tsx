@@ -4,38 +4,30 @@ import CountryMapLoader from "@/components/map/CountryMapLoader";
 
 async function getAttractions(country: string) {
   try {
-    const countryRecord = await prisma.country.findUnique({ where: { slug: country } });
-    if (!countryRecord) return [];
+    // Use raw query to bypass pg adapter SQL translation issues
+    const result = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT a.*, c.name as "city_name", p.name as "province_name"
+       FROM attractions a
+       JOIN cities c ON a.city_id = c.id
+       JOIN provinces p ON c.province_id = p.id
+       JOIN countries co ON p.country_id = co.id
+       WHERE co.slug = $1
+       ORDER BY a.rating DESC`,
+      country
+    );
 
-    // Query provinces by country ID directly
-    const provinces = await prisma.province.findMany({
-      where: { countryId: countryRecord.id },
-      select: { id: true },
-    });
-    const provinceIds = provinces.map((p) => p.id);
-    if (provinceIds.length === 0) return [];
-
-    // Query cities by province IDs
-    const cities = await prisma.city.findMany({
-      where: { provinceId: { in: provinceIds } },
-      select: { id: true, name: true, province: { select: { name: true } } },
-    });
-    const cityIds = cities.map((c) => c.id);
-    if (cityIds.length === 0) return [];
-
-    // Query attractions by city IDs
-    const attractions = await prisma.attraction.findMany({
-      where: { cityId: { in: cityIds } },
-      orderBy: { rating: "desc" },
-    });
-
-    return attractions.map((a) => {
-      const city = cities.find((c) => c.id === a.cityId);
-      return {
-        ...a,
-        city: { name: city?.name || "", province: { name: city?.province?.name || "" } },
-      } as any;
-    });
+    return result.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      lat: r.lat,
+      lng: r.lng,
+      category: r.category,
+      rating: r.rating,
+      ticketInfo: r.ticket_info || "",
+      description: r.description || "",
+      images: r.images || "[]",
+      city: { name: r.city_name || "", province: { name: r.province_name || "" } },
+    }));
   } catch (err) {
     console.error("Failed to load attractions:", err);
     return [];
