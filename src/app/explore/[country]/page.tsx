@@ -4,17 +4,32 @@ import CountryMapLoader from "@/components/map/CountryMapLoader";
 
 async function getAttractions(country: string) {
   try {
-    // Use raw query to bypass pg adapter SQL translation issues
-    const result = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT a.*, c.name as "city_name", p.name as "province_name"
-       FROM attractions a
-       JOIN cities c ON a.city_id = c.id
-       JOIN provinces p ON c.province_id = p.id
-       JOIN countries co ON p.country_id = co.id
-       WHERE co.slug = $1
-       ORDER BY a.rating DESC`,
-      country
-    );
+    // Simple direct query without nested relations
+    const countryRecord = await prisma.country.findUnique({ where: { slug: country } });
+    if (!countryRecord) return [];
+
+    const allAttractions = await prisma.attraction.findMany({
+      select: { id: true, name: true, lat: true, lng: true, category: true, rating: true, ticketInfo: true, description: true, images: true, cityId: true },
+      orderBy: { rating: "desc" },
+      take: 200,
+    });
+
+    // Get provinces in this country
+    const provinces = await prisma.province.findMany({
+      where: { countryId: countryRecord.id },
+      select: { id: true },
+    });
+    const provinceIds = new Set(provinces.map((p) => p.id));
+
+    // Get cities in these provinces
+    const cityIds = [...new Set(allAttractions.map((a) => a.cityId))];
+    const cities = await prisma.city.findMany({
+      where: { id: { in: cityIds } },
+      select: { id: true, name: true, provinceId: true, province: { select: { name: true } } },
+    });
+    const validCityIds = new Set(cities.filter((c) => provinceIds.has(c.provinceId)).map((c) => c.id));
+
+    const result = allAttractions.filter((a) => validCityIds.has(a.cityId));
 
     return result.map((r: any) => ({
       id: r.id,
