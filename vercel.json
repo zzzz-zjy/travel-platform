@@ -1,5 +1,5 @@
 {
-  "buildCommand": "sed -i 's/provider = \"sqlite\"/provider = \"postgresql\"/' prisma/schema.prisma && npx prisma generate && npx prisma db push --accept-data-loss && npx tsx prisma/seed.ts && next build",
+  "buildCommand": "node -e \"const fs=require('fs');let s=fs.readFileSync('prisma/schema.prisma','utf8');s=s.replace('provider = \\\"sqlite\\\"','provider = \\\"postgresql\\\"');fs.writeFileSync('prisma/schema.prisma',s)\" && npx prisma generate && npx prisma db push --accept-data-loss && npx tsx prisma/seed.ts && next build",
   "installCommand": "npm install",
   "framework": "nextjs"
 }
