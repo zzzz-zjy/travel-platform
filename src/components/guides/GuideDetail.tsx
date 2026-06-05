@@ -25,6 +25,7 @@ interface GuideWithDays {
     items: {
       id: number; timeSlot: string; durationMin: number;
       customSpot: string | null; ticketReminder: string | null; tips: string | null;
+      transportTip: string | null;
       attraction: { id: number; name: string; category: string } | null;
     }[];
   }[];
@@ -159,6 +160,11 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
                       {item.tips && (
                         <div style={{ fontSize: 13, color: "#6b7280", marginTop: 4 }}>
                           💡 {item.tips}
+                        </div>
+                      )}
+                      {item.transportTip && (
+                        <div style={{ fontSize: 13, color: "#059669", marginTop: 4 }}>
+                          🚇 {item.transportTip}
                         </div>
                       )}
                     </div>
