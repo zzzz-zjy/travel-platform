@@ -3,11 +3,16 @@ import Link from "next/link";
 import CountryMapLoader from "@/components/map/CountryMapLoader";
 
 async function getAttractions(country: string) {
-  return prisma.attraction.findMany({
-    where: { city: { province: { country: { slug: country } } } },
-    include: { city: { include: { province: { include: { country: true } } } } },
-    orderBy: { rating: "desc" },
-  });
+  try {
+    return await prisma.attraction.findMany({
+      where: { city: { province: { country: { slug: country } } } },
+      include: { city: { include: { province: { include: { country: true } } } } },
+      orderBy: { rating: "desc" },
+    });
+  } catch (err) {
+    console.error("Failed to load attractions:", err);
+    return [];
+  }
 }
 
 export default async function ExploreCountryPage({
