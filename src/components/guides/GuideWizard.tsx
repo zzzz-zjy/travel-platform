@@ -24,6 +24,8 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
   const [persona, setPersona] = useState("serious");
   const [mode, setMode] = useState<"balanced" | "compact" | "relaxed">("balanced");
   const [regenerating, setRegenerating] = useState(false);
+  const [departureCity, setDepartureCity] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
 
@@ -77,6 +79,8 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
           phase,
           persona: extra?.persona || persona,
           mode: extra?.mode || mode,
+          departureCity,
+          departureDate,
         }),
       });
 
@@ -128,6 +132,8 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
               budgetAmount: parsed.totalBudget || 3000,
               transportMode: parsed.transport || "地铁+网约车",
               travelStyle: "综合",
+              departureCity: departureCity || null,
+              departureDate: departureDate || null,
               rawJson: JSON.stringify(parsed),
               days: (parsed.days || []).map((d: any) => ({
                 dayNumber: d.day,
@@ -241,6 +247,17 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
               ))}
             </div>
           )}
+        </div>
+
+        {/* Departure */}
+        <div style={{ padding: "8px 16px", borderBottom: "1px solid #e5e7eb", background: "#fafafa", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>从</span>
+          <input placeholder="出发城市" value={departureCity} onChange={(e) => setDepartureCity(e.target.value)}
+            style={{ padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, width: 110, outline: "none" }} />
+          <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>出发</span>
+          <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)}
+            style={{ padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, outline: "none" }} />
+          <span style={{ fontSize: 11, color: "#9ca3af" }}>可选 · 填写后会推荐火车/飞机</span>
         </div>
 
         {/* Messages */}

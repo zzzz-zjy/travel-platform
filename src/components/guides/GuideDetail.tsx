@@ -16,6 +16,8 @@ interface GuideWithDays {
   budgetAmount: number;
   transportMode: string;
   travelStyle: string;
+  departureCity: string | null;
+  departureDate: string | null;
   destinationCity: {
     name: string;
     province: { name: string; country: { name: string; slug: string } };
@@ -111,6 +113,15 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
           <Badge color="#ede9fe" textColor="#6d28d9">{guide.travelStyle}</Badge>
         </div>
       </div>
+
+      {guide.departureCity && guide.departureDate && (
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "#f0f9ff", borderRadius: 10, border: "1px solid #bae6fd", display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 14 }}>🚄</span>
+          <span style={{ fontSize: 13, color: "#0369a1", fontWeight: 500 }}>
+            从 {guide.departureCity} 出发 · {guide.departureDate}
+          </span>
+        </div>
+      )}
 
       {/* 快捷操作按钮 */}
       <QuickActions guideId={guide.id} guideTitle={saved} />
