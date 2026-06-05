@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
               durationMin: item.durationMin,
               ticketReminder: item.ticketReminder || null,
               tips: item.tips || null,
+              transportTip: item.transportTip || null,
             })),
           },
         })),
