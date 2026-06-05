@@ -27,6 +27,31 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
 
+  const STORAGE_KEY = "guideWizardState";
+
+  // 恢复之前的对话状态
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const { messages: savedMsgs, phase: savedPhase } = JSON.parse(saved);
+        if (savedMsgs?.length > 0) {
+          setMessages(savedMsgs);
+          setPhase(savedPhase || "asking");
+        }
+      }
+    } catch {}
+  }, []);
+
+  // 持久化对话状态
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, phase }));
+      } catch {}
+    }
+  }, [messages, phase]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -120,6 +145,7 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
             }),
           });
           const saved = await saveRes.json();
+          sessionStorage.removeItem(STORAGE_KEY);
           setTimeout(() => router.push(`/guides/${saved.id}`), 1500);
         } catch {
           setMessages((prev) => [...prev, { role: "assistant", content: "保存出错了，请重试。" }]);
