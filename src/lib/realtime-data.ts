@@ -18,8 +18,8 @@ const WEATHER_POOL = ['☀️ 晴', '⛅ 多云', '☁️ 阴', '🌧️ 小雨'
 const CROWD_LABELS: Record<string, string> = { low: '人少舒适', medium: '适中', high: '较拥挤' };
 
 /** 获取景点实时状态（基于名称hash生成稳定的模拟数据） */
-export function getSpotStatus(spotName: string, spotId?: number): SpotStatus {
-  const now = new Date();
+export function getSpotStatus(spotName: string, spotId?: number, targetDate?: string): SpotStatus {
+  const now = targetDate ? new Date(targetDate) : new Date();
   const hour = now.getHours();
   const seed = (spotId || spotName.charCodeAt(0) || 65) + now.getDate();
 

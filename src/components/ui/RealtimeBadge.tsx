@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { getSpotStatus, SpotStatus, getWeatherAlerts, WeatherAlert } from "@/lib/realtime-data";
 
-export function SpotStatusBadge({ spotName, spotId }: { spotName: string; spotId?: number }) {
+export function SpotStatusBadge({ spotName, spotId, targetDate }: { spotName: string; spotId?: number; targetDate?: string }) {
   const [status, setStatus] = useState<SpotStatus | null>(null);
 
   useEffect(() => {
-    setStatus(getSpotStatus(spotName, spotId));
-  }, [spotName, spotId]);
+    setStatus(getSpotStatus(spotName, spotId, targetDate));
+  }, [spotName, spotId, targetDate]);
 
   if (!status) return null;
 

@@ -158,6 +158,7 @@ export default function GuideDetail({ guide, isOwner }: { guide: GuideWithDays; 
                         <SpotStatusBadge
                           spotName={item.attraction?.name || item.customSpot || ""}
                           spotId={item.attraction?.id}
+                          targetDate={guide.departureDate || undefined}
                         />
                       </div>
                       <div style={{ fontSize: 13, color: "#9ca3af", marginTop: 2 }}>
