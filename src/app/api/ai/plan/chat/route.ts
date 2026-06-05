@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "今日AI请求次数已用完，请明天再试" }, { status: 429 });
   }
 
-  const { messages, persona, mode } = await request.json();
+  const { messages, persona, mode, departureCity, departureDate } = await request.json();
 
   let personaInstruction = "";
   if (persona === "humorous") {
@@ -124,11 +124,16 @@ export async function POST(request: NextRequest) {
     modeInstruction = "\n当前模式：休闲松弛。每天安排2-3个景点，留充足的休息和自由时间。";
   }
 
+  let departureInstruction = "";
+  if (departureCity && departureDate) {
+    departureInstruction = `\n## 出发信息\n- 用户出发地：${departureCity}\n- 出发日期：${departureDate}\n\n请在攻略开头添加一个"到达交通"部分，推荐高铁方案（含大致时间、二等座价格）和航班方案（含大致时间、经济舱价格）。根据出发日期考虑季节性因素和周末/工作日人流量差异安排行程。`;
+  }
+
   const response = await client.chat.completions.create({
     model: "deepseek-chat",
     max_tokens: 4096,
     messages: [
-      { role: "system", content: SYSTEM_PROMPT + personaInstruction + modeInstruction },
+      { role: "system", content: SYSTEM_PROMPT + personaInstruction + modeInstruction + departureInstruction },
       ...messages.map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,

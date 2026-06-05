@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
       budgetAmount: body.budgetAmount,
       transportMode: body.transportMode,
       travelStyle: body.travelStyle,
+      departureCity: body.departureCity || null,
+      departureDate: body.departureDate || null,
       rawJson: body.rawJson || null,
       days: {
         create: body.days.map((day: any) => ({

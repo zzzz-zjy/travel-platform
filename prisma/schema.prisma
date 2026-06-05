@@ -113,6 +113,8 @@ model Guide {
   budgetAmount      Int        @map("budget_amount")
   transportMode     String     @map("transport_mode")
   travelStyle       String     @map("travel_style")
+  departureCity     String?    @map("departure_city")
+  departureDate     String?    @map("departure_date")
   rawJson           String?    @map("raw_json")
   isSystem          Boolean    @default(false) @map("is_system")
   creatorIp         String?    @map("creator_ip")
