@@ -28,9 +28,13 @@ export async function POST(request: NextRequest) {
     });
     if (city) cityId = city.id;
   }
-  if (!cityId) cityId = 1; // fallback to Beijing
+  if (!cityId) {
+    const fallback = await prisma.city.findFirst({ where: { name: "北京" } });
+    cityId = fallback?.id || 1;
+  }
 
-  const guide = await prisma.guide.create({
+  try {
+    const guide = await prisma.guide.create({
     data: {
       creatorIp: ip,
       userId: (session?.user as any)?.id || null,
@@ -65,4 +69,8 @@ export async function POST(request: NextRequest) {
     include: { days: { include: { items: true } } },
   });
   return NextResponse.json(guide, { status: 201 });
+  } catch (err: any) {
+    console.error("POST /api/guides error:", err?.message || err);
+    return NextResponse.json({ error: err?.message || "Server error" }, { status: 500 });
+  }
 }
