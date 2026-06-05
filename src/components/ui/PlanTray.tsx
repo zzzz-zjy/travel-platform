@@ -41,6 +41,8 @@ export default function PlanTray() {
   const [diet, setDiet] = useState<string[]>([]);
   const [pace, setPace] = useState(50);
   const [accommodation, setAccommodation] = useState("mid");
+  const [departureCity, setDepartureCity] = useState("");
+  const [departureDate, setDepartureDate] = useState("");
 
   if (items.length === 0) return null;
 
@@ -78,6 +80,8 @@ export default function PlanTray() {
       dietStr ? `diet=${encodeURIComponent(dietStr)}` : "",
       `accommodation=${encodeURIComponent(accommodation)}`,
       `pace=${paceLabel}`,
+      departureCity ? `departureCity=${encodeURIComponent(departureCity)}` : "",
+      departureDate ? `departureDate=${encodeURIComponent(departureDate)}` : "",
     ].filter(Boolean).join("&");
 
     router.push(`/guide/new?attractions=${ids}&days=${d}&budget=${b}&style=${encodeURIComponent(fullStyle)}&${extraParams}`);
@@ -254,6 +258,17 @@ export default function PlanTray() {
                 <button key={a.key} onClick={() => setAccommodation(a.key)}
                   style={tagStyle(accommodation === a.key)}>{a.label}</button>
               ))}
+            </div>
+          </div>
+
+          {/* 出发信息 */}
+          <div>
+            <span style={sectionLabel}>🚄 出发信息 <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 400 }}>可选</span></span>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input placeholder="出发城市" value={departureCity} onChange={(e) => setDepartureCity(e.target.value)}
+                style={{ flex: 1, padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }} />
+              <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)}
+                style={{ flex: 1, padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, outline: "none" }} />
             </div>
           </div>
 
