@@ -1,9 +1,7 @@
 // scripts/crawl/index.ts
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { CtripCrawler } from "./sources/ctrip";
-import { MafengwoCrawler } from "./sources/mafengwo";
-import { QunarCrawler } from "./sources/qunar";
+import { BaiduCrawler } from "./sources/baidu";
 import { normalizeAttraction, normalizeHotel } from "./pipeline/normalizer";
 import { mergeAttractions, mergeHotels } from "./pipeline/merger";
 import { resetRequestCount } from "./utils/fetcher";
@@ -18,9 +16,7 @@ const adapter = new PrismaLibSql({ url: "file:./dev.db" });
 const prisma = new PrismaClient({ adapter });
 
 const crawlers = [
-  new CtripCrawler(),
-  new MafengwoCrawler(),
-  new QunarCrawler(),
+  new BaiduCrawler(),
 ];
 
 async function crawlCity(city: string) {
@@ -170,7 +166,7 @@ async function main() {
     : CITIES;
 
   console.log(`Starting crawl for ${cities.length} cities...`);
-  console.log(`Sources: ctrip, mafengwo, qunar\n`);
+  console.log(`Sources: baidu\n`);
 
   for (const city of cities) {
     await crawlCity(city);
