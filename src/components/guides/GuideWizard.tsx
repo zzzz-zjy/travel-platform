@@ -114,6 +114,7 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
                   durationMin: i.duration || 60,
                   ticketReminder: i.ticket ? `${i.ticket.price}元 — ${i.ticket.purchase}` : "",
                   tips: i.tip || "",
+                  transportTip: i.transportTip || "",
                 })),
               })),
             }),
