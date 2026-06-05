@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import GuideList from "@/components/guides/GuideList";
 
+export const dynamic = "force-dynamic";
+
 async function getGuides() {
   const guides = await prisma.guide.findMany({
     include: {
