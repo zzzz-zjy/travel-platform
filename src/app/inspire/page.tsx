@@ -25,6 +25,7 @@ interface Recommendation {
 export default function InspirePage() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
+  const [region, setRegion] = useState<"domestic" | "international">("domestic");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Recommendation[]>([]);
 
@@ -40,7 +41,7 @@ export default function InspirePage() {
       const res = await fetch("/api/ai/inspire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interests: selected }),
+        body: JSON.stringify({ interests: selected, region }),
       });
       const data = await res.json();
       setResults(data.recommendations || []);
@@ -68,6 +69,23 @@ export default function InspirePage() {
       <p style={{ color: "#666", marginBottom: 24 }}>
         不知道去哪玩？选择你的偏好，AI 为你发现冷门宝藏目的地
       </p>
+
+      <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
+        <button onClick={() => setRegion("domestic")} style={{
+          padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+          border: region === "domestic" ? "2px solid #2563eb" : "1px solid #e5e7eb",
+          background: region === "domestic" ? "#eff6ff" : "white",
+          color: region === "domestic" ? "#2563eb" : "#6b7280",
+          cursor: "pointer", transition: "all 0.15s",
+        }}>🇨🇳 国内</button>
+        <button onClick={() => setRegion("international")} style={{
+          padding: "8px 20px", borderRadius: 8, fontSize: 14, fontWeight: 600,
+          border: region === "international" ? "2px solid #2563eb" : "1px solid #e5e7eb",
+          background: region === "international" ? "#eff6ff" : "white",
+          color: region === "international" ? "#2563eb" : "#6b7280",
+          cursor: "pointer", transition: "all 0.15s",
+        }}>🌏 国外</button>
+      </div>
 
       {/* 偏好选择 */}
       <div style={{ marginBottom: 24 }}>
