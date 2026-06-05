@@ -57,7 +57,7 @@ export default function GuideWizard({ initialPrompt }: { initialPrompt?: string 
   }, [messages]);
 
   useEffect(() => {
-    if (initialPrompt && !initialSent.current) {
+    if (initialPrompt && !initialSent.current && messages.length === 0) {
       initialSent.current = true;
       const userMsg: Message = { role: "user", content: initialPrompt };
       setMessages([userMsg]);
