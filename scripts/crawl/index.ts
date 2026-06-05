@@ -1,5 +1,6 @@
 // scripts/crawl/index.ts
 import { PrismaClient } from "@prisma/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
 import { CtripCrawler } from "./sources/ctrip";
 import { MafengwoCrawler } from "./sources/mafengwo";
 import { QunarCrawler } from "./sources/qunar";
@@ -13,7 +14,8 @@ const CITIES = [
   "大连", "昆明", "桂林", "哈尔滨",
 ];
 
-const prisma = new PrismaClient();
+const adapter = new PrismaLibSql({ url: "file:./dev.db" });
+const prisma = new PrismaClient({ adapter });
 
 const crawlers = [
   new CtripCrawler(),
