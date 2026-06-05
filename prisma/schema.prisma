@@ -125,6 +125,7 @@ model GuideItem {
   durationMin    Int         @map("duration_min")
   ticketReminder String?     @map("ticket_reminder")
   tips           String?
+  transportTip   String?     @map("transport_tip")
   guideDay       GuideDay    @relation(fields: [guideDayId], references: [id])
   attraction     Attraction? @relation(fields: [attractionId], references: [id])
   createdAt      DateTime    @default(now()) @map("created_at")
