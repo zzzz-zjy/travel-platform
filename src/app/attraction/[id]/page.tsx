@@ -44,7 +44,7 @@ export default async function AttractionPage({
 
       {/* Hero Image */}
       <div style={{ marginTop: 24, borderRadius: 16, overflow: "hidden", position: "relative" }}>
-        <HeroImage name={attr.name} query={attr.name} category={attr.category} />
+        <HeroImage name={attr.name} query={attr.name} category={attr.category} dbImages={attr.images} />
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
           background: "linear-gradient(transparent, rgba(0,0,0,0.6))",

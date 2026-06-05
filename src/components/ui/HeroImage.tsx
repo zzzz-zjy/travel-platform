@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const PALETTES: Record<string, [string, string]> = {
   nature: ["#2d6a4f", "#52b788"],
@@ -18,12 +18,32 @@ const EMOJIS: Record<string, string> = {
   adventure: "🎯",
 };
 
-export default function HeroImage({ name, query, category }: { name: string; query: string; category?: string }) {
+export default function HeroImage({ name, query, category, dbImages }: {
+  name: string;
+  query: string;
+  category?: string;
+  dbImages?: string;
+}) {
   const [failed, setFailed] = useState(false);
 
   const cat = category || "nature";
   const [c1, c2] = PALETTES[cat] || PALETTES.nature;
   const emoji = EMOJIS[cat] || "📍";
+
+  const dbImageUrl = useMemo(() => {
+    if (!dbImages) return null;
+    try {
+      const arr = JSON.parse(dbImages);
+      if (Array.isArray(arr) && arr.length > 0 && typeof arr[0] === "string" && arr[0].startsWith("http")) {
+        return arr[0];
+      }
+    } catch {}
+    return null;
+  }, [dbImages]);
+
+  const src = dbImageUrl && !failed
+    ? dbImageUrl
+    : `/api/images?name=${encodeURIComponent(query)}&category=${encodeURIComponent(cat)}&w=800&h=400`;
 
   if (failed) {
     return (
@@ -41,7 +61,7 @@ export default function HeroImage({ name, query, category }: { name: string; que
 
   return (
     <img
-      src={`/api/images?name=${encodeURIComponent(query)}&category=${encodeURIComponent(cat)}&w=800&h=400`}
+      src={src}
       alt={name}
       style={{ width: "100%", height: 360, objectFit: "cover", display: "block" }}
       onError={() => setFailed(true)}
