@@ -4,10 +4,28 @@ import CountryMapLoader from "@/components/map/CountryMapLoader";
 
 async function getAttractions(country: string) {
   try {
-    return await prisma.attraction.findMany({
-      where: { city: { province: { country: { slug: country } } } },
-      include: { city: { include: { province: { include: { country: true } } } } },
+    const countryRecord = await prisma.country.findUnique({ where: { slug: country } });
+    if (!countryRecord) return [];
+
+    const cities = await prisma.city.findMany({
+      where: { province: { countryId: countryRecord.id } },
+      select: { id: true, name: true, province: { select: { name: true } } },
+    });
+
+    const cityIds = cities.map((c) => c.id);
+    if (cityIds.length === 0) return [];
+
+    const attractions = await prisma.attraction.findMany({
+      where: { cityId: { in: cityIds } },
       orderBy: { rating: "desc" },
+    });
+
+    return attractions.map((a) => {
+      const city = cities.find((c) => c.id === a.cityId);
+      return {
+        ...a,
+        city: { name: city?.name || "", province: { name: city?.province?.name || "" } },
+      } as any;
     });
   } catch (err) {
     console.error("Failed to load attractions:", err);
@@ -22,7 +40,7 @@ export default async function ExploreCountryPage({
 }) {
   const { country } = await params;
   const attractions = await getAttractions(country);
-  const serialized = attractions.map((a) => ({
+  const serialized = attractions.map((a: any) => ({
     id: a.id,
     name: a.name,
     lat: a.lat,
@@ -30,11 +48,10 @@ export default async function ExploreCountryPage({
     category: a.category,
     rating: a.rating,
     ticketInfo: a.ticketInfo || "",
-    city: { name: a.city.name, province: { name: a.city.province.name } },
+    city: { name: a.city?.name || "", province: { name: a.city?.province?.name || "" } },
   }));
 
-  const countryName =
-    attractions[0]?.city?.province?.country?.name || country.toUpperCase();
+  const countryName = attractions[0]?.city?.name ? country.toUpperCase() : country.toUpperCase();
 
   return (
     <div>
