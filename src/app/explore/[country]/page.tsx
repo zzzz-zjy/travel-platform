@@ -7,14 +7,23 @@ async function getAttractions(country: string) {
     const countryRecord = await prisma.country.findUnique({ where: { slug: country } });
     if (!countryRecord) return [];
 
+    // Query provinces by country ID directly
+    const provinces = await prisma.province.findMany({
+      where: { countryId: countryRecord.id },
+      select: { id: true },
+    });
+    const provinceIds = provinces.map((p) => p.id);
+    if (provinceIds.length === 0) return [];
+
+    // Query cities by province IDs
     const cities = await prisma.city.findMany({
-      where: { province: { countryId: countryRecord.id } },
+      where: { provinceId: { in: provinceIds } },
       select: { id: true, name: true, province: { select: { name: true } } },
     });
-
     const cityIds = cities.map((c) => c.id);
     if (cityIds.length === 0) return [];
 
+    // Query attractions by city IDs
     const attractions = await prisma.attraction.findMany({
       where: { cityId: { in: cityIds } },
       orderBy: { rating: "desc" },
