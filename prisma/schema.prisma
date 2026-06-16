@@ -151,7 +151,7 @@ model RouteStop {
 model Journey {
   id          Int           @id @default(autoincrement())
   title       String
-  routeId     Int           @map("route_id")
+  routeId     Int?          @map("route_id")
   totalDays   Int           @map("total_days")
   budgetAmount Int          @map("budget_amount")
   transportMode String      @map("transport_mode")
@@ -161,7 +161,7 @@ model Journey {
   creatorIp   String?       @map("creator_ip")
   userId      String?       @map("user_id")
   user        User?         @relation(fields: [userId], references: [id])
-  route       Route         @relation(fields: [routeId], references: [id])
+  route       Route?        @relation(fields: [routeId], references: [id])
   days        JourneyDay[]
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
