@@ -1,24 +1,22 @@
 import type { Metadata } from "next";
 import Header from "@/components/ui/Header";
-import MapFAB from "@/components/ui/MapFAB";
-import PlanTray from "@/components/ui/PlanTray";
 import Providers from "@/components/Providers";
+import BottomNav from "@/components/ui/BottomNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "旅行攻略 — AI 智能规划你的完美行程",
-  description: "通过 3D 地球选择目的地，AI 帮你生成个性化旅游攻略",
+  title: "红色记忆 — 革命旧址与博物馆数字教育平台",
+  description: "通过3D中国地图探索革命旧址，AI讲解员带你深度了解革命历史",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body style={{ minHeight: "100vh", background: "white", color: "#111827", margin: 0 }}>
+      <body className="min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
         <Providers>
           <Header />
-          <main>{children}</main>
-          <PlanTray />
-          <MapFAB />
+          <main className="pb-16">{children}</main>
+          <BottomNav />
         </Providers>
       </body>
     </html>
