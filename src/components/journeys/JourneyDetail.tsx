@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface JourneyData {
   id: number;
@@ -10,12 +11,16 @@ interface JourneyData {
   budgetAmount: number;
   transportMode: string;
   travelStyle: string;
+  departureCity?: string | null;
+  departureDate?: string | null;
   rawJson: string | null;
   createdAt: string;
+  days?: any[];
+  route?: { name: string; era: { name: string; color: string } } | null;
 }
 
 const CAT_COLORS: Record<string, string> = {
-  accommodation: "#3b82f6", food: "#f59e0b", transport: "#10b981",
+  accommodation: "#C41E3A", food: "#f59e0b", transport: "#10b981",
   tickets: "#8b5cf6", other: "#6b7280",
 };
 
@@ -25,7 +30,7 @@ function BudgetBreakdown({ budgetAmount, days }: { budgetAmount: number; days: a
   const breakdown = useMemo(() => {
     let tickets = 0;
     days.forEach((d: any) => {
-      (d.items || []).forEach((item: any) => {
+      (d.items || d.stops || []).forEach((item: any) => {
         if (item.ticket) {
           const t = typeof item.ticket === "object" ? item.ticket.price : item.ticket;
           const match = String(t).match(/(\d+)/);
@@ -87,7 +92,7 @@ function BudgetBreakdown({ budgetAmount, days }: { budgetAmount: number; days: a
               <div style={{ height: "100%", borderRadius: 6, width: `${(cat.value / maxVal) * 100}%`, background: CAT_COLORS[cat.cat] || "#6b7280", transition: "width 0.5s ease", minWidth: cat.value > 0 ? 30 : 0 }} />
             </div>
             <span style={{ fontSize: 13, fontWeight: 600, minWidth: 80, textAlign: "right" }}>¥{cat.value.toLocaleString()}</span>
-            <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 40, textAlign: "right" }}>{total > 0 ? ((cat.value / breakdown.total) * 100).toFixed(0) : 0}%</span>
+            <span style={{ fontSize: 11, color: "#9ca3af", minWidth: 40, textAlign: "right" }}>{breakdown.total > 0 ? ((cat.value / breakdown.total) * 100).toFixed(0) : 0}%</span>
           </div>
         ))}
       </div>
@@ -96,7 +101,7 @@ function BudgetBreakdown({ budgetAmount, days }: { budgetAmount: number; days: a
   );
 }
 
-function QuickActions({ journeyId, onAction }: { journeyId: number; onAction: (prompt: string) => void }) {
+function QuickActions({ onAction }: { journeyId: number; onAction: (prompt: string) => void }) {
   const ACTIONS = [
     { key: "simplify", label: "📋 精简行程", prompt: "请帮我精简这个行程，每天只保留最重要的2-3个核心旧址，去掉次要参观点，让行程更轻松。" },
     { key: "deep_history", label: "📚 深度历史", prompt: "请为每个旧址增加更详细的历史背景讲解，包括相关人物、事件和历史意义。" },
@@ -148,7 +153,7 @@ function ExportButton({ title }: { title: string }) {
           <div style={{ position: "absolute", bottom: "calc(100% + 8px)", right: 0, background: "white", borderRadius: 12, boxShadow: "0 10px 40px rgba(0,0,0,0.15)", padding: 8, minWidth: 180, zIndex: 100, display: "flex", flexDirection: "column", gap: 2 }}>
             {[
               { label: "🖨️ 打印 PDF", onClick: handlePrint },
-              { label: "📋 复制攻略文本", onClick: handleCopy },
+              { label: "📋 复制研学路线文本", onClick: handleCopy },
               { label: "🔗 分享链接", onClick: handleShare },
             ].map(item => (
               <button key={item.label} onClick={item.onClick} style={{
@@ -165,13 +170,17 @@ function ExportButton({ title }: { title: string }) {
   );
 }
 
-export default function JourneyDetail({ journey }: { journey: JourneyData }) {
+export default function JourneyDetail({ journey, isOwner }: { journey: JourneyData; isOwner?: boolean }) {
   const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(journey.title);
+  const [saved, setSaved] = useState(journey.title);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMsgs, setChatMsgs] = useState<{ role: string; content: string }[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
 
+  // Parse rawJson for days data (primary source, with DB relations as fallback)
   let parsed: any = null;
   try {
     if (journey.rawJson) {
@@ -180,11 +189,34 @@ export default function JourneyDetail({ journey }: { journey: JourneyData }) {
     }
   } catch {}
 
-  const days = parsed?.days || [];
+  const rawDays = parsed?.days || [];
   const budget = parsed?.totalBudget || journey.budgetAmount;
 
+  // Build display days: prefer parsed JSON, fall back to DB days
+  const displayDays: any[] = rawDays.length > 0 ? rawDays : (journey.days || []).map((d: any) => ({
+    day: d.dayNumber,
+    title: d.title,
+    items: (d.stops || d.items || []).map((s: any) => ({
+      time: s.timeSlot,
+      spot: s.customSpot || s.site?.name || "",
+      duration: s.durationMin,
+      tip: s.tips,
+      transportTip: s.transportTip,
+    })),
+  }));
+
+  const saveTitle = async () => {
+    await fetch(`/api/journeys/${journey.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    setSaved(title);
+    setEditing(false);
+  };
+
   const deleteJourney = async () => {
-    if (!confirm("确定删除？")) return;
+    if (!confirm("确定要删除这个研学路线吗？此操作不可恢复。")) return;
     await fetch(`/api/journeys/${journey.id}`, { method: "DELETE" });
     router.push("/my");
   };
@@ -224,44 +256,98 @@ export default function JourneyDetail({ journey }: { journey: JourneyData }) {
   };
 
   return (
-    <div style={{ maxWidth: 768, margin: "0 auto", padding: "16px 16px 80px" }}>
-      <button onClick={() => router.push("/my")} style={{ color: "var(--color-primary-light)", background: "none", border: "none", cursor: "pointer", fontSize: 14, marginBottom: 12 }}>← 返回我的</button>
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 16px 80px" }}>
+      <Link href="/journeys" style={{ color: "#C41E3A", textDecoration: "none", fontSize: 14 }}>
+        ← 返回研学广场
+      </Link>
 
-      {/* Hero */}
-      <div style={{ background: "linear-gradient(135deg, #8B0000 0%, #C41E3A 100%)", borderRadius: 12, padding: "24px 20px", marginBottom: 16, color: "white" }}>
-        <h1 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 700, fontFamily: "var(--font-heading)" }}>{journey.title}</h1>
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 12 }}>
-          <Badge>{journey.totalDays}天</Badge>
-          <Badge>¥{budget}</Badge>
-          <Badge>{journey.transportMode}</Badge>
-          <Badge>{journey.travelStyle}</Badge>
+      {/* Route info */}
+      {journey.route && (
+        <div style={{ marginTop: 4 }}>
+          <span style={{
+            background: journey.route.era.color, color: "white",
+            padding: "3px 10px", borderRadius: 9999, fontSize: 11,
+          }}>
+            {journey.route.era.name} · {journey.route.name}
+          </span>
+        </div>
+      )}
+
+      <div style={{ marginTop: 16 }}>
+        {editing ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} style={{
+              fontSize: 30, fontWeight: "bold", border: "1px solid #d1d5db",
+              borderRadius: 8, padding: "4px 12px", flex: 1,
+            }} autoFocus />
+            <button onClick={saveTitle} style={{
+              padding: "8px 16px", background: "#C41E3A", color: "white",
+              border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14,
+            }}>保存</button>
+            <button onClick={() => { setTitle(saved); setEditing(false); }} style={{
+              padding: "8px 16px", background: "#e5e7eb", border: "none",
+              borderRadius: 8, cursor: "pointer", fontSize: 14,
+            }}>取消</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 30, fontWeight: "bold", margin: 0 }}>{saved}</h1>
+            {isOwner && (
+              <button onClick={() => setEditing(true)} style={{
+                fontSize: 12, color: "#9ca3af", background: "none", border: "none",
+                cursor: "pointer", padding: "4px 8px",
+              }}>✏️ 编辑</button>
+            )}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
+          <Badge color="#fee2e2" textColor="#991b1b">{journey.totalDays}天</Badge>
+          <Badge color="#dcfce7" textColor="#16a34a">¥{budget}/人</Badge>
+          <Badge color="#ffedd5" textColor="#c2410c">{journey.transportMode}</Badge>
+          <Badge color="#ede9fe" textColor="#6d28d9">{journey.travelStyle}</Badge>
         </div>
       </div>
+
+      {journey.departureCity && journey.departureDate && (
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "#fef2f2", borderRadius: 10, border: "1px solid #fecaca", display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 14 }}>🚄</span>
+          <span style={{ fontSize: 13, color: "#991b1b", fontWeight: 500 }}>
+            从 {journey.departureCity} 出发 · {journey.departureDate}
+          </span>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <QuickActions journeyId={journey.id} onAction={handleChatAction} />
 
-      {/* Day-by-day */}
-      {days.length > 0 ? (
+      {/* Day-by-day itinerary */}
+      {displayDays.length > 0 ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {days.map((day: any, di: number) => (
+          {displayDays.map((day: any, di: number) => (
             <div key={di} style={{ background: "white", borderRadius: 12, overflow: "hidden", border: "1px solid #f0e0d0" }}>
               <div style={{ background: "linear-gradient(90deg, #8B0000, #C41E3A)", color: "white", padding: "12px 20px", fontSize: 16, fontWeight: 600 }}>
                 Day {day.day || di + 1} — {day.title || `第${di + 1}天`}
               </div>
               <div style={{ padding: "16px 20px" }}>
-                {(day.items || []).map((item: any, ii: number) => (
-                  <div key={ii} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: ii < (day.items || []).length - 1 ? "1px solid #f5f0eb" : "none" }}>
-                    <div style={{ fontSize: 12, color: "var(--color-text-light)", minWidth: 70, fontFamily: "monospace", paddingTop: 2 }}>{item.time || ""}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{item.spot || item.name || `参观点${ii + 1}`}</div>
-                      {item.duration && <div style={{ fontSize: 12, color: "#999", marginBottom: 2 }}>⏱ 约 {item.duration} 分钟</div>}
-                      {item.ticket && <div style={{ fontSize: 13, color: "#d97706", marginTop: 4 }}>🎫 {typeof item.ticket === "object" ? `${item.ticket.price}元 — ${item.ticket.purchase}` : item.ticket}</div>}
-                      {item.tip && <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>💡 {item.tip}</div>}
-                      {item.transportTip && <div style={{ fontSize: 13, color: "#059669", marginTop: 4 }}>🚇 {item.transportTip}</div>}
+                {(day.items || []).length > 0 ? (
+                  (day.items || []).map((item: any, ii: number) => (
+                    <div key={ii} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: ii < (day.items || []).length - 1 ? "1px solid #f5f0eb" : "none" }}>
+                      <div style={{ fontSize: 12, color: "#999", minWidth: 70, fontFamily: "monospace", paddingTop: 2 }}>{item.time || ""}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{item.spot || item.name || `参观点${ii + 1}`}</div>
+                        {item.duration && <div style={{ fontSize: 12, color: "#999", marginBottom: 2 }}>⏱ 约 {item.duration} 分钟</div>}
+                        {item.ticket && <div style={{ fontSize: 13, color: "#d97706", marginTop: 4 }}>🎫 {typeof item.ticket === "object" ? `${item.ticket.price}元 — ${item.ticket.purchase}` : item.ticket}</div>}
+                        {item.tip && <div style={{ fontSize: 13, color: "#666", marginTop: 4 }}>💡 {item.tip}</div>}
+                        {item.transportTip && <div style={{ fontSize: 13, color: "#059669", marginTop: 4 }}>🚇 {item.transportTip}</div>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <div style={{ padding: "16px 0", textAlign: "center", color: "#999" }}>本日暂无详细安排</div>
+                )}
+                {day.notes && (
+                  <p style={{ marginTop: 16, color: "#4b5563", fontSize: 14, borderTop: "1px solid #e5e7eb", paddingTop: 16 }}>{day.notes}</p>
+                )}
               </div>
             </div>
           ))}
@@ -272,8 +358,8 @@ export default function JourneyDetail({ journey }: { journey: JourneyData }) {
         <div style={{ textAlign: "center", padding: 40, color: "#999" }}>暂无行程数据</div>
       )}
 
-      {/* Budget */}
-      {days.length > 0 && <BudgetBreakdown budgetAmount={budget} days={days} />}
+      {/* Budget Breakdown */}
+      {displayDays.length > 0 && <BudgetBreakdown budgetAmount={budget} days={displayDays} />}
 
       {/* Chat panel */}
       {chatOpen && (
@@ -298,15 +384,34 @@ export default function JourneyDetail({ journey }: { journey: JourneyData }) {
       )}
 
       {/* Bottom actions */}
-      <div style={{ marginTop: 24, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={() => setChatOpen(true)} style={{ background: "#7c3aed", color: "white", padding: "12px 20px", borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer", fontSize: 14 }}>💬 AI 微调</button>
-        <ExportButton title={journey.title} />
-        <button onClick={deleteJourney} style={{ background: "#fee2e2", color: "#dc2626", padding: "12px 20px", borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer", fontSize: 14 }}>🗑️ 删除</button>
+      <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <button onClick={() => setChatOpen(true)} style={{
+          background: "#7c3aed", color: "white", padding: "12px 24px",
+          borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer", fontSize: 14,
+        }}>
+          💬 AI 微调
+        </button>
+        <ExportButton title={saved} />
+        {isOwner && (
+          <button onClick={deleteJourney} style={{
+            background: "#fee2e2", color: "#dc2626", padding: "12px 24px",
+            borderRadius: 12, fontWeight: "bold", border: "none", cursor: "pointer",
+          }}>
+            🗑️ 删除
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
-  return <span style={{ background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: 9999, fontSize: 13 }}>{children}</span>;
+function Badge({ color, textColor, children }: { color: string; textColor: string; children: React.ReactNode }) {
+  return (
+    <span style={{
+      background: color, color: textColor, padding: "6px 14px",
+      borderRadius: 9999, fontSize: 13, fontWeight: 500
+    }}>
+      {children}
+    </span>
+  );
 }

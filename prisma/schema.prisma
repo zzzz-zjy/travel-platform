@@ -160,6 +160,8 @@ model Journey {
   isSystem    Boolean       @default(false) @map("is_system")
   creatorIp   String?       @map("creator_ip")
   userId      String?       @map("user_id")
+  departureCity String?     @map("departure_city")
+  departureDate String?     @map("departure_date")
   user        User?         @relation(fields: [userId], references: [id])
   route       Route?        @relation(fields: [routeId], references: [id])
   days        JourneyDay[]
