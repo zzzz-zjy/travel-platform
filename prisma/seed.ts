@@ -69,10 +69,11 @@ async function main() {
         },
       });
 
-      const eraName = provinceEraMap[provinceName] || "抗日战争";
-      const eraId = eraMap[eraName];
+      const defaultEraName = provinceEraMap[provinceName] || "抗日战争";
 
       for (const siteData of cityData.sites) {
+        const eraName = siteData.era || defaultEraName;
+        const eraId = eraMap[eraName];
         await prisma.site.create({
           data: {
             cityId: city.id,

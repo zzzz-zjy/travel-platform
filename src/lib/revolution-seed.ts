@@ -8,6 +8,7 @@ export interface SeedSite {
   description: string;
   historicalBg: string;
   images: string[];
+  era?: string;
 }
 
 export interface SeedCity {
@@ -46,6 +47,7 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           description: "五四运动策源地，中国最早传播马克思主义的地方",
           historicalBg: "1918年建成，原北京大学文科大楼。李大钊在此开设中国最早的马克思主义课程，毛泽东曾在此担任图书馆助理员。这里是五四运动的重要发源地，也是中国共产党早期北京革命活动的见证。",
           images: [],
+          era: "建党初期",
         },
         {
           name: "中国人民抗日战争纪念馆", siteType: "博物馆",
@@ -62,6 +64,7 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           description: "中共中央进驻北平后的第一个驻地",
           historicalBg: "1949年3月，中共中央从西柏坡迁至北平香山。毛泽东在此指挥了渡江战役，筹备了中国人民政治协商会议，为新中国诞生做了最后准备。双清别墅是毛泽东居住和办公的地点。",
           images: [],
+          era: "解放战争",
         },
       ]},
     ],
@@ -92,6 +95,7 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           description: "缅怀革命先烈的纪念圣地",
           historicalBg: "原为国民党淞沪警备司令部旧址，1927年至1937年间，数以千计的共产党人和革命志士在此被关押和杀害。包括陈延年、赵世炎、柔石等烈士，鲁迅曾写下《为了忘却的记念》悼念在此牺牲的左联五烈士。",
           images: [],
+          era: "土地革命",
         },
       ]},
     ],
@@ -174,6 +178,7 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           description: "西安事变发生地，改变中国历史进程的关键地点",
           historicalBg: "1936年12月12日，张学良、杨虎城在此发动西安事变，扣押蒋介石，逼蒋抗日。在中国共产党的斡旋下，事变和平解决，促成了抗日民族统一战线的形成，成为扭转时局的关键。",
           images: [],
+          era: "土地革命",
         },
       ]},
     ],
@@ -252,6 +257,7 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           description: "红岩英烈长眠之地",
           historicalBg: "渣滓洞和白公馆是国民党军统特务关押、迫害共产党人和革命志士的监狱。1949年11月27日，国民党在溃逃前夕制造了震惊中外的'一一·二七'大屠杀，江竹筠（江姐）等300多名革命者英勇就义。",
           images: [],
+          era: "解放战争",
         },
       ]},
     ],
