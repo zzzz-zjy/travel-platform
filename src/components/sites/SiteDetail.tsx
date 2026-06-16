@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface SiteData {
@@ -20,6 +21,7 @@ interface SiteData {
     province: { name: string };
   };
   event: { name: string; date: string; description: string } | null;
+  favoriteButton?: boolean;
 }
 
 export default function SiteDetail({ site }: { site: SiteData }) {
@@ -59,13 +61,14 @@ export default function SiteDetail({ site }: { site: SiteData }) {
         <p style={{ fontSize: 13, opacity: 0.8 }}>
           {site.city.province.name} · {site.city.name} · 评分 {site.rating}
         </p>
-        <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
           <span style={{
             background: "rgba(255,255,255,0.15)", padding: "3px 10px",
             borderRadius: 9999, fontSize: 12,
           }}>
             {site.era.name}
           </span>
+          <FavButton siteId={site.id} />
         </div>
       </div>
 
@@ -134,5 +137,44 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span style={{ color: "var(--color-text-light)", minWidth: 70 }}>{label}</span>
       <span style={{ color: "#333" }}>{value}</span>
     </div>
+  );
+}
+
+function FavButton({ siteId }: { siteId: number }) {
+  const [faved, setFaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/favorites?siteId=${siteId}`)
+      .then(r => r.json())
+      .then(d => { if (d.favorited !== undefined) setFaved(d.favorited); })
+      .catch(() => {});
+  }, [siteId]);
+
+  const toggle = async () => {
+    if (loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteId }),
+      });
+      if (res.status === 401) { alert("请先登录"); return; }
+      const data = await res.json();
+      if (data.favorited !== undefined) setFaved(data.favorited);
+    } catch {} finally { setLoading(false); }
+  };
+
+  return (
+    <button onClick={toggle} style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      background: faved ? "#C41E3A" : "rgba(255,255,255,0.2)",
+      color: "white", border: "none", borderRadius: 9999,
+      padding: "6px 16px", fontSize: 14, cursor: "pointer",
+      marginLeft: 8,
+    }}>
+      {faved ? "★ 已收藏" : "☆ 收藏"}
+    </button>
   );
 }
