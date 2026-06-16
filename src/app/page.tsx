@@ -1,3 +1,5 @@
+"use client";
+
 import dynamic from "next/dynamic";
 
 const ChinaMapScene = dynamic(() => import("@/components/china-map/ChinaMapScene"), {
