@@ -124,8 +124,9 @@ export default function ChinaMapScene() {
         scrollWheelZoom={true}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; 高德地图'
+          url="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
+          subdomains="1234"
         />
         <MapClickHandler onProvinceSelect={setSelectedProvince} />
         {PROVINCES.map(p => (
