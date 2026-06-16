@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
@@ -13,7 +13,7 @@ export async function GET() {
     },
     take: 20,
   });
-  return NextResponse.json({ journeys });
+  return Response.json({ journeys });
 }
 
 export async function POST(request: NextRequest) {
@@ -26,12 +26,14 @@ export async function POST(request: NextRequest) {
   let routeId: number;
   const existingRoute = await prisma.route.findFirst();
   if (!existingRoute) {
+    // Get the first era to satisfy FK constraint
+    const firstEra = await prisma.era.findFirst({ orderBy: { id: "asc" } });
     const newRoute = await prisma.route.create({
       data: {
         name: "自定义路线",
         description: "用户自定义研学路线",
         totalDays: totalDays || 3,
-        eraId: 1, // 建党初期
+        eraId: firstEra!.id,
       },
     });
     routeId = newRoute.id;
@@ -53,5 +55,5 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ id: journey.id });
+  return Response.json({ id: journey.id });
 }
