@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <header style={{
@@ -20,7 +20,16 @@ export default function Header() {
       </Link>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
         {user ? (
-          <span style={{ fontSize: 14, opacity: 0.9 }}>{user.name}</span>
+          <>
+            <span style={{ fontSize: 14, opacity: 0.9 }}>{user.name}</span>
+            <button onClick={logout} style={{
+              background: "rgba(255,255,255,0.2)", color: "white",
+              border: "1px solid rgba(255,255,255,0.3)", borderRadius: 6,
+              padding: "4px 12px", fontSize: 12, cursor: "pointer",
+            }}>
+              退出
+            </button>
+          </>
         ) : (
           <Link href="/login" style={{ color: "white", fontSize: 14, textDecoration: "none" }}>
             登录
