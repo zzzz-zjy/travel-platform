@@ -11,40 +11,65 @@ export default function NewJourneyPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
-  const [savedId, setSavedId] = useState<number | null>(null);
 
   const handleGenerate = async () => {
     if (!city.trim() || loading) return;
     setLoading(true);
     setResult("");
     setError("");
-    setSavedId(null);
 
     try {
+      // Step 1: Save journey first (empty rawJson)
+      const saveRes = await fetch("/api/journeys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${city}红色研学${days}日之旅`,
+          totalDays: days,
+          budgetAmount: 2000,
+          transportMode: "大巴+步行",
+          travelStyle: style,
+          rawJson: "",
+        }),
+      });
+
+      if (!saveRes.ok) {
+        const errText = await saveRes.text();
+        setError(`保存失败(${saveRes.status}): ${errText}`);
+        setLoading(false);
+        return;
+      }
+
+      const saved = await saveRes.json();
+      const journeyId = saved.id;
+      if (!journeyId) {
+        setError("保存失败：未返回 ID");
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Generate AI content
       const res = await fetch("/api/ai/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          city,
-          attractions: [],
-          days,
-          people: 1,
-          transport: "大巴+步行",
-          budget: 2000,
-          style,
+          city, attractions: [], days, people: 1,
+          transport: "大巴+步行", budget: 2000, style,
         }),
       });
 
       if (!res.ok) {
-        setError(`API请求失败: ${res.status}`);
+        setError(`AI请求失败: ${res.status}`);
         setLoading(false);
+        // Redirect to saved journey even if AI fails
+        router.push(`/journeys/${journeyId}`);
         return;
       }
 
       const reader = res.body?.getReader();
       if (!reader) {
-        setError("无法读取AI响应流");
         setLoading(false);
+        router.push(`/journeys/${journeyId}`);
         return;
       }
 
@@ -63,49 +88,29 @@ export default function NewJourneyPage() {
               full += data.text;
               setResult(full);
             }
-            if (data.done) {
-              if (data.full) full = data.full;
-              setResult(full);
-
-              // Save journey
-              const saveRes = await fetch("/api/journeys", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  title: `${city}红色研学${days}日之旅`,
-                  totalDays: days,
-                  budgetAmount: 2000,
-                  transportMode: "大巴+步行",
-                  travelStyle: style,
-                  rawJson: full,
-                }),
-              });
-
-              if (!saveRes.ok) {
-                const errText = await saveRes.text();
-                setError(`保存失败(${saveRes.status}): ${errText}`);
-                setLoading(false);
-                return;
-              }
-
-              const saved = await saveRes.json();
-              if (saved.id) {
-                setSavedId(saved.id);
-                setTimeout(() => router.push(`/journeys/${saved.id}`), 1000);
-              } else {
-                setError("保存成功但未返回ID");
-              }
-            }
-          } catch (e: any) {
-            // Skip parse errors for individual SSE chunks
-            if (e.message?.includes("JSON")) continue;
-            setError(`数据处理错误: ${e.message}`);
-          }
+          } catch {}
         }
       }
+
+      setResult(full);
+      setLoading(false);
+
+      // Step 3: Update journey with generated content
+      if (full) {
+        try {
+          await fetch(`/api/journeys/${journeyId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rawJson: full }),
+          });
+        } catch {}
+      }
+
+      // Redirect
+      router.push(`/journeys/${journeyId}`);
+
     } catch (e: any) {
       setError(`请求失败: ${e.message}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -116,35 +121,23 @@ export default function NewJourneyPage() {
         ✨ 创建红色研学路线
       </h1>
 
-      <div style={{
-        background: "white", borderRadius: 12, padding: 24, border: "1px solid #f0e0d0",
-        marginBottom: 20,
-      }}>
+      <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #f0e0d0", marginBottom: 20 }}>
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 6, color: "#333" }}>
             目的地城市
           </label>
-          <input
-            value={city}
-            onChange={e => setCity(e.target.value)}
+          <input value={city} onChange={e => setCity(e.target.value)}
             placeholder="例如：延安、井冈山、遵义..."
-            style={{
-              width: "100%", padding: "12px 16px", borderRadius: 8,
-              border: "1px solid #e0d0c0", fontSize: 15, outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
+            style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid #e0d0c0", fontSize: 15, outline: "none", boxSizing: "border-box" }} />
         </div>
 
         <div style={{ marginBottom: 16 }}>
           <label style={{ display: "block", fontSize: 14, fontWeight: 600, marginBottom: 6, color: "#333" }}>
             研学天数: {days}天
           </label>
-          <input
-            type="range" min={1} max={7} value={days}
+          <input type="range" min={1} max={7} value={days}
             onChange={e => setDays(parseInt(e.target.value))}
-            style={{ width: "100%", accentColor: "var(--color-primary-light)" }}
-          />
+            style={{ width: "100%", accentColor: "var(--color-primary-light)" }} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#999" }}>
             <span>1天</span><span>7天</span>
           </div>
@@ -162,9 +155,7 @@ export default function NewJourneyPage() {
                 background: style === s ? "#fff0f0" : "white",
                 color: style === s ? "var(--color-primary-light)" : "#666",
                 cursor: "pointer", fontWeight: style === s ? 600 : 400,
-              }}>
-                {s}
-              </button>
+              }}>{s}</button>
             ))}
           </div>
         </div>
@@ -175,33 +166,19 @@ export default function NewJourneyPage() {
           color: "white", border: "none", fontSize: 16, fontWeight: 600,
           cursor: loading ? "not-allowed" : "pointer",
         }}>
-          {loading ? "AI 正在生成研学路线..." : savedId ? "✅ 已保存，跳转中..." : "🤖 AI 生成研学路线"}
+          {loading ? "⏳ AI 正在生成研学路线..." : "🤖 AI 生成研学路线"}
         </button>
       </div>
 
       {error && (
-        <div style={{
-          background: "#fff0f0", borderRadius: 8, padding: 12,
-          color: "#C41E3A", fontSize: 13, marginBottom: 16,
-          border: "1px solid #fdd",
-        }}>
+        <div style={{ background: "#fff0f0", borderRadius: 8, padding: 12, color: "#C41E3A", fontSize: 13, marginBottom: 16, border: "1px solid #fdd" }}>
           ❌ {error}
         </div>
       )}
 
       {result && (
-        <div style={{
-          background: "white", borderRadius: 12, padding: 20,
-          border: "1px solid #f0e0d0", whiteSpace: "pre-wrap",
-          lineHeight: 1.7, fontSize: 14, color: "#333",
-          maxHeight: 500, overflowY: "auto",
-        }}>
+        <div style={{ background: "white", borderRadius: 12, padding: 20, border: "1px solid #f0e0d0", whiteSpace: "pre-wrap", lineHeight: 1.7, fontSize: 14, color: "#333", maxHeight: 500, overflowY: "auto" }}>
           {result}
-          {savedId && (
-            <div style={{ marginTop: 16, padding: 12, background: "#f0fff0", borderRadius: 8, color: "#16a34a", textAlign: "center" }}>
-              ✅ 已保存！正在跳转到详情页...
-            </div>
-          )}
         </div>
       )}
     </div>
