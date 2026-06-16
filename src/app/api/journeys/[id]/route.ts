@@ -16,3 +16,12 @@ export async function GET(
 
   return Response.json({ journey });
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  await prisma.journey.delete({ where: { id: parseInt(id) } });
+  return Response.json({ ok: true });
+}
