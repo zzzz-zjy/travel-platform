@@ -3,6 +3,7 @@ import Header from "@/components/ui/Header";
 import Providers from "@/components/Providers";
 import BottomNav from "@/components/ui/BottomNav";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 
 export const metadata: Metadata = {
   title: "红色记忆 — 革命旧址与博物馆数字教育平台",

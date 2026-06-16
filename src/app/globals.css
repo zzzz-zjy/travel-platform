@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* Leaflet CSS - must be loaded globally for Next.js */
-@import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-
 /* Revolution Platform Theme */
 :root {
   --color-primary: #8B0000;
