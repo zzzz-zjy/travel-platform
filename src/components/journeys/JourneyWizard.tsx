@@ -2,17 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { SCENARIOS, getScenario } from "@/lib/scenarios";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-const PERSONAS = [
-  { key: "serious", label: "🎓 严谨干货", desc: "专业详尽的研学路线信息" },
-  { key: "humorous", label: "😎 幽默闲聊", desc: "轻松有趣的研学建议" },
-  { key: "minimal", label: "🤫 极简安静", desc: "言简意赅，直奔主题" },
+const STUDY_PRESETS = [
+  { key: "deep", label: "📚 深度研学", desc: "每处旧址详细历史背景讲解，适合深度学习", prompt: "请为每处旧址增加详细的历史背景、相关人物和事件讲解，控制在3天内，每天2-3个核心参观点。" },
+  { key: "route", label: "🗺️ 主题路线", desc: "按历史事件时间线串联旧址", prompt: "请按革命历史时间线串联旧址，形成完整的历史叙事路线。每天安排2-3个旧址，有逻辑地从早期到后期。" },
+  { key: "quick", label: "⚡ 精华速览", desc: "1-2天快速打卡核心旧址", prompt: "请规划一个精华速览路线，1-2天内覆盖最核心的革命旧址，每天3-4个参观点，节奏紧凑高效。" },
 ];
 
 export default function JourneyWizard({ initialPrompt }: { initialPrompt?: string }) {
@@ -21,9 +20,6 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [phase, setPhase] = useState<"greeting" | "asking" | "generating" | "done">("greeting");
-  const [persona, setPersona] = useState("serious");
-  const [mode, setMode] = useState<"balanced" | "compact" | "relaxed">("balanced");
-  const [regenerating, setRegenerating] = useState(false);
   const [departureCity, setDepartureCity] = useState("");
   const [departureDate, setDepartureDate] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -31,7 +27,6 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
 
   const STORAGE_KEY = "journeyWizardState";
 
-  // 恢复之前的对话状态
   useEffect(() => {
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
@@ -45,12 +40,9 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
     } catch {}
   }, []);
 
-  // 持久化对话状态
   useEffect(() => {
     if (messages.length > 0) {
-      try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, phase }));
-      } catch {}
+      try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, phase })); } catch {}
     }
   }, [messages, phase]);
 
@@ -68,7 +60,7 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
     }
   }, [initialPrompt]);
 
-  const streamChat = async (msgs: Message[], extra?: { persona?: string; mode?: string }) => {
+  const streamChat = async (msgs: Message[]) => {
     setLoading(true);
     try {
       const res = await fetch("/api/ai/plan/chat", {
@@ -77,8 +69,6 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
         body: JSON.stringify({
           messages: msgs.map((m) => ({ role: m.role, content: m.content })),
           phase,
-          persona: extra?.persona || persona,
-          mode: extra?.mode || mode,
           departureCity,
           departureDate,
         }),
@@ -128,7 +118,7 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
             body: JSON.stringify({
               title: parsed.title,
               totalDays: parsed.days?.length || 3,
-              budgetAmount: parsed.totalBudget || 3000,
+              budgetAmount: parsed.totalBudget || 2000,
               transportMode: parsed.transport || "大巴+步行",
               travelStyle: "研学",
               departureCity: departureCity || null,
@@ -142,7 +132,7 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
                   timeSlot: i.time || "",
                   customSpot: i.spot || "",
                   durationMin: i.duration || 60,
-                  tips: [i.ticket ? `🎫 ${typeof i.ticket === 'object' ? `${i.ticket.price}元 — ${i.ticket.purchase}` : i.ticket}` : "", i.tip ? `💡 ${i.tip}` : ""].filter(Boolean).join(" | ") || null,
+                  tips: i.tip || "",
                   transportTip: i.transportTip || "",
                 })),
               })),
@@ -159,7 +149,6 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
       setMessages((prev) => [...prev, { role: "assistant", content: "出错了，请重试。" }]);
     }
     setLoading(false);
-    setRegenerating(false);
   };
 
   const sendWith = async (userMsg: Message) => {
@@ -176,71 +165,39 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
     await sendWith(userMsg);
   };
 
-  const handleScenarioClick = (key: string) => {
-    const s = getScenario(key);
-    if (!s) return;
-    const scenarioMsg: Message = {
-      role: "user",
-      content: `使用"${s.name}"场景模式。${s.promptAddition}`,
-    };
+  const handlePreset = (key: string) => {
+    const preset = STUDY_PRESETS.find(p => p.key === key);
+    if (!preset) return;
     setInput("");
-    sendWith(scenarioMsg);
-  };
-
-  const handleModeSwitch = async (newMode: "compact" | "balanced" | "relaxed") => {
-    if (regenerating) return;
-    setMode(newMode);
-    setRegenerating(true);
-    const modeLabels = { compact: "紧凑", balanced: "适中", relaxed: "松弛" };
-    const modeMsg: Message = {
-      role: "user",
-      content: `请把行程切换为${modeLabels[newMode]}节奏模式重新生成。${newMode === "compact" ? "每天安排更多旧址，时间紧凑一点。" : newMode === "relaxed" ? "减少每天的旧址数量，留充足的休息和自由探索时间。" : "保持适中节奏。"}`,
-    };
-    await sendWith(modeMsg);
+    sendWith({ role: "user", content: preset.prompt });
   };
 
   return (
     <div style={{ maxWidth: 700, margin: "0 auto" }}>
       <div style={{
-        border: "1px solid #e5e7eb", borderRadius: 16, overflow: "hidden",
+        border: "1px solid #f0e0d0", borderRadius: 16, overflow: "hidden",
         display: "flex", flexDirection: "column", height: 560,
       }}>
         {/* Header */}
-        <div style={{ padding: 16, borderBottom: "1px solid #e5e7eb", background: "#f8fafc" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>🤖 AI 红色研学规划师</h2>
-              <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
-                告诉我你想去哪里，我会帮你定制完美红色研学路线
-              </p>
-            </div>
-            {/* AI 风格选择 */}
-            <div style={{ display: "flex", gap: 2 }}>
-              {PERSONAS.map((p) => (
-                <button key={p.key} onClick={() => setPersona(p.key)}
-                  title={p.desc}
-                  style={{
-                    padding: "4px 8px", borderRadius: 6, fontSize: 11,
-                    border: persona === p.key ? "1px solid #C41E3A" : "1px solid transparent",
-                    background: persona === p.key ? "#fff0f0" : "transparent",
-                    color: persona === p.key ? "#C41E3A" : "#9ca3af",
-                    cursor: "pointer", transition: "all 0.15s",
-                  }}>{p.label}</button>
-              ))}
-            </div>
-          </div>
+        <div style={{ padding: 16, borderBottom: "1px solid #f0e0d0", background: "#fafafa" }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, fontFamily: "var(--font-heading)", color: "var(--color-primary)" }}>
+            🤖 AI 红色研学规划师
+          </h2>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#666" }}>
+            告诉我想去哪里，我会帮你定制红色研学路线
+          </p>
 
-          {/* 场景快捷选择 */}
+          {/* 研学预设 */}
           {messages.length === 0 && (
             <div style={{ display: "flex", gap: 4, marginTop: 10, flexWrap: "wrap" }}>
-              {SCENARIOS.map((s) => (
-                <button key={s.key} onClick={() => handleScenarioClick(s.key)} style={{
+              {STUDY_PRESETS.map((s) => (
+                <button key={s.key} onClick={() => handlePreset(s.key)} style={{
                   padding: "5px 10px", borderRadius: 99, fontSize: 12,
-                  border: "1px solid #e5e7eb", background: "white",
-                  color: "#6b7280", cursor: "pointer",
+                  border: "1px solid #f0e0d0", background: "white",
+                  color: "var(--color-primary-light)", cursor: "pointer",
                   transition: "all 0.15s",
                 }} title={s.desc}>
-                  {s.icon} {s.name}
+                  {s.label}
                 </button>
               ))}
             </div>
@@ -248,24 +205,23 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
         </div>
 
         {/* Departure */}
-        <div style={{ padding: "8px 16px", borderBottom: "1px solid #e5e7eb", background: "#fafafa", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>从</span>
+        <div style={{ padding: "8px 16px", borderBottom: "1px solid #f0e0d0", background: "#fafafa", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#666", fontWeight: 500 }}>从</span>
           <input placeholder="出发城市" value={departureCity} onChange={(e) => setDepartureCity(e.target.value)}
-            style={{ padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, width: 110, outline: "none" }} />
-          <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 500 }}>出发</span>
+            style={{ padding: "6px 10px", border: "1px solid #e0d0c0", borderRadius: 6, fontSize: 13, width: 110, outline: "none" }} />
+          <span style={{ fontSize: 13, color: "#666", fontWeight: 500 }}>出发</span>
           <input type="date" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)}
-            style={{ padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, outline: "none" }} />
-          <span style={{ fontSize: 11, color: "#9ca3af" }}>可选 · 填写后会推荐火车/飞机</span>
+            style={{ padding: "6px 10px", border: "1px solid #e0d0c0", borderRadius: 6, fontSize: 13, outline: "none" }} />
+          <span style={{ fontSize: 11, color: "#999" }}>可选 · 填写后会推荐交通方式</span>
         </div>
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           {messages.length === 0 && (
-            <div style={{ textAlign: "center", color: "#94a3b8", marginTop: 60 }}>
+            <div style={{ textAlign: "center", color: "#999", marginTop: 60 }}>
               <p style={{ fontSize: 28, margin: 0 }}>🚩</p>
-              <p style={{ marginTop: 8, fontSize: 14 }}>
-                在下方输入你想去的红色研学目的地开始规划，或选择上方场景模式
-              </p>
+              <p style={{ marginTop: 8, fontSize: 14 }}>输入你想去的红色研学目的地开始规划</p>
+              <p style={{ fontSize: 12, color: "#ccc" }}>或选择上方预设模式</p>
             </div>
           )}
 
@@ -275,10 +231,9 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
             }}>
               <div style={{
                 maxWidth: "85%", padding: "10px 16px", borderRadius: 14,
-                background: m.role === "user" ? "#C41E3A" : "#f1f5f9",
-                color: m.role === "user" ? "white" : "#1e293b",
-                fontSize: 14, lineHeight: 1.6,
-                whiteSpace: "pre-wrap",
+                background: m.role === "user" ? "var(--color-primary-light)" : "#f5f0eb",
+                color: m.role === "user" ? "white" : "#333",
+                fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap",
               }}>
                 {m.content || (loading ? "..." : "")}
               </div>
@@ -288,49 +243,25 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
         </div>
 
         {/* Input */}
-        <div style={{ padding: 12, borderTop: "1px solid #e5e7eb" }}>
-          {/* 紧凑/松弛切换（生成完成后显示） */}
-          {phase === "done" && (
-            <div style={{ display: "flex", gap: 6, marginBottom: 10, justifyContent: "center" }}>
-              {(["compact", "balanced", "relaxed"] as const).map((m) => (
-                <button key={m} onClick={() => handleModeSwitch(m)}
-                  disabled={regenerating}
-                  style={{
-                    padding: "5px 14px", borderRadius: 99, fontSize: 12, fontWeight: 600,
-                    border: mode === m ? "2px solid #C41E3A" : "2px solid #e5e7eb",
-                    background: mode === m ? "#fff0f0" : "white",
-                    color: mode === m ? "#C41E3A" : "#6b7280",
-                    cursor: regenerating ? "not-allowed" : "pointer",
-                    opacity: regenerating ? 0.6 : 1,
-                    transition: "all 0.15s",
-                  }}>
-                  {m === "compact" ? "🏃 紧凑" : m === "relaxed" ? "🚶 松弛" : "🎯 适中"}
-                </button>
-              ))}
-            </div>
-          )}
+        <div style={{ padding: 12, borderTop: "1px solid #f0e0d0" }}>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder={phase === "done" ? "研学路线已生成，可切换到其他模式" : loading ? "AI 正在思考..." : "输入你的需求..."}
-              disabled={loading || regenerating}
+              placeholder={loading ? "AI 正在思考..." : "输入你的需求，例如：我想去延安研学长 Days..."}
+              disabled={loading}
               style={{
-                flex: 1, padding: "10px 14px", border: "1px solid #d1d5db",
+                flex: 1, padding: "10px 14px", border: "1px solid #e0d0c0",
                 borderRadius: 10, fontSize: 14, outline: "none",
               }}
             />
-            <button
-              onClick={send}
-              disabled={loading || !input.trim()}
-              style={{
-                background: loading ? "#94a3b8" : "#C41E3A",
-                color: "white", padding: "10px 20px", border: "none",
-                borderRadius: 10, fontWeight: 600, fontSize: 14,
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
+            <button onClick={send} disabled={loading || !input.trim()} style={{
+              background: loading ? "#ccc" : "var(--color-primary-light)",
+              color: "white", padding: "10px 20px", border: "none",
+              borderRadius: 10, fontWeight: 600, fontSize: 14,
+              cursor: loading ? "not-allowed" : "pointer",
+            }}>
               发送
             </button>
           </div>
