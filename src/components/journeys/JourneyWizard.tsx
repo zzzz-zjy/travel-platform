@@ -138,15 +138,21 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
               })),
             }),
           });
+          if (!saveRes.ok) {
+            const errText = await saveRes.text();
+            setMessages((prev) => [...prev, { role: "assistant", content: `保存失败(${saveRes.status}): ${errText}` }]);
+            setLoading(false);
+            return;
+          }
           const saved = await saveRes.json();
           sessionStorage.removeItem(STORAGE_KEY);
           setTimeout(() => router.push(`/journeys/${saved.id}`), 1500);
-        } catch {
-          setMessages((prev) => [...prev, { role: "assistant", content: "保存出错了，请重试。" }]);
+        } catch (e: any) {
+          setMessages((prev) => [...prev, { role: "assistant", content: `保存出错: ${e.message}` }]);
         }
       }
-    } catch {
-      setMessages((prev) => [...prev, { role: "assistant", content: "出错了，请重试。" }]);
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: `请求出错: ${e.message}` }]);
     }
     setLoading(false);
   };
