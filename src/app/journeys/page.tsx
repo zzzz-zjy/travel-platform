@@ -48,7 +48,7 @@ export default function JourneysPage() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {journeys.map((j: any) => (
-            <div key={j.id} onClick={() => router.push(`/my`)} style={{
+            <div key={j.id} onClick={() => router.push(`/journeys/${j.id}`)} style={{
               background: "white", borderRadius: 12, padding: "16px 20px",
               border: "1px solid #f0e0d0", cursor: "pointer",
             }}>

@@ -70,7 +70,7 @@ export default function NewJourneyPage() {
                   });
                   const saved = await saveRes.json();
                   if (saved.id) {
-                    setTimeout(() => router.push(`/my`), 2000);
+                    setTimeout(() => router.push(`/journeys/${saved.id}`), 1500);
                   }
                 } catch {}
               }
