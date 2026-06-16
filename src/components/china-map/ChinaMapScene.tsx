@@ -1,27 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-
-// Fix Leaflet default icon paths
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-// Red marker icon for revolutionary sites
-const redIcon = new L.Icon({
-  iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
 
 const PROVINCES = [
   { name: "北京", lat: 39.9, lng: 116.4 },
@@ -93,6 +75,16 @@ function MapClickHandler({ onProvinceSelect }: { onProvinceSelect: (name: string
 export default function ChinaMapScene() {
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
 
+  // Fix Leaflet default icon paths (must run client-side after L is loaded)
+  useEffect(() => {
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+      iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+      shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+    });
+  }, []);
+
   return (
     <div style={{ width: "100%", height: "calc(100vh - 56px - 56px)", position: "relative" }}>
       {/* Top bar */}
@@ -130,7 +122,7 @@ export default function ChinaMapScene() {
         />
         <MapClickHandler onProvinceSelect={setSelectedProvince} />
         {PROVINCES.map(p => (
-          <Marker key={p.name} position={[p.lat, p.lng]} icon={redIcon}>
+          <Marker key={p.name} position={[p.lat, p.lng]}>
             <Popup maxWidth={320} minWidth={260}>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: "#8B0000" }}>
                 {p.name}
