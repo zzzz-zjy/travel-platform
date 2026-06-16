@@ -1,5 +1,5 @@
-import GlobeScene from "@/components/globe/GlobeScene";
+import ChinaMapScene from "@/components/china-map/ChinaMapScene";
 
 export default function Home() {
-  return <GlobeScene />;
+  return <ChinaMapScene />;
 }
