@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Leaflet CSS - must be loaded globally for Next.js */
+@import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+
 /* Revolution Platform Theme */
 :root {
   --color-primary: #8B0000;
@@ -23,6 +26,12 @@ h1, h2, h3, h4, h5, h6 {
 body {
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+/* Leaflet container must have explicit height */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
 }
 
 /* Leaflet fix */
