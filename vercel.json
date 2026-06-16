@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node scripts/vercel-build.js && npx prisma generate && npx prisma db push --force-reset && next build",
+  "buildCommand": "node scripts/vercel-build.js && npx prisma generate && npx prisma db push --force-reset && npx tsx prisma/seed.ts && next build",
   "installCommand": "npm install",
   "framework": "nextjs"
 }
