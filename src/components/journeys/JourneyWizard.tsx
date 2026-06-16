@@ -63,23 +63,14 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
   const streamChat = async (msgs: Message[]) => {
     setLoading(true);
     try {
-      // Call DeepSeek directly from browser (Vercel US servers blocked)
-      const res = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      const res = await fetch("/api/ai/plan/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer sk-7715e71be3a146308ccf176ed07d5e02",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "deepseek-chat",
-          max_tokens: 4096,
-          stream: true,
-          messages: [
-            { role: "system", content: `你是红色研学规划师，专门设计革命旧址研学路线。
-输出完整JSON格式：{"city":"","title":"","totalBudget":0,"transport":"","days":[{"day":1,"title":"","items":[{"time":"09:00","spot":"旧址名","duration":60,"ticket":{"price":0,"purchase":"购票方式"},"transportTip":"交通方式","tip":"参观建议","historyNote":"历史背景"}]}],"budgetBreakdown":{"accommodation":0,"food":0,"transport":0,"tickets":0,"other":0},"studyTips":[]}
-每天2-3个参观点，只输出JSON，不要markdown。` },
-            ...msgs.map(m => ({ role: m.role as any, content: m.content })),
-          ],
+          messages: msgs.map((m) => ({ role: m.role, content: m.content })),
+          phase,
+          departureCity,
+          departureDate,
         }),
       });
 
@@ -94,29 +85,22 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
         const lines = chunk.split("\n");
         for (const line of lines) {
           if (line.startsWith("data: ")) {
-            const raw = line.slice(6).trim();
-            if (raw === "[DONE]") continue;
-            try {
-              const data = JSON.parse(raw);
-              const content = data.choices?.[0]?.delta?.content;
-              const finishReason = data.choices?.[0]?.finish_reason;
-              if (content) {
-                full += content;
-                setMessages((prev) => {
-                  const next = [...prev];
-                  const lastIdx = next.length - 1;
-                  if (next[lastIdx]?.role === "assistant") {
-                    next[lastIdx] = { ...next[lastIdx], content: full };
-                  } else {
-                    next.push({ role: "assistant", content: full });
-                  }
-                  return next;
-                });
-              }
-              if (finishReason === "stop") {
-                // Generation complete
-              }
-            } catch {}
+            const data = JSON.parse(line.slice(6));
+            if (data.done) {
+              full = data.full;
+            } else if (data.text) {
+              full += data.text;
+              setMessages((prev) => {
+                const next = [...prev];
+                const lastIdx = next.length - 1;
+                if (next[lastIdx]?.role === "assistant") {
+                  next[lastIdx] = { ...next[lastIdx], content: full };
+                } else {
+                  next.push({ role: "assistant", content: full });
+                }
+                return next;
+              });
+            }
           }
         }
       }
