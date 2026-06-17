@@ -1,8 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { PlanProvider } from "@/components/plan/PlanContext";
-import SelectionBar from "@/components/plan/SelectionBar";
-import CoverOverlay from "@/components/CoverOverlay";
-import ChinaMapWrapper from "@/components/china-map/ChinaMapWrapper";
+import HomeContent from "@/components/HomeContent";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +15,7 @@ export default async function Home() {
 
   return (
     <PlanProvider sites={sites}>
-      <CoverOverlay />
-      <div style={{ height: "calc(100vh - 44px - 56px)", overflow: "hidden" }}>
-        <ChinaMapWrapper />
-      </div>
-      <SelectionBar />
+      <HomeContent />
     </PlanProvider>
   );
 }

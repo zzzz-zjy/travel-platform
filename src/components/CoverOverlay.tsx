@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 
-export default function CoverOverlay() {
-  const [visible, setVisible] = useState(true);
+export default function CoverOverlay({ onEnter }: { onEnter: () => void }) {
   const [fadeOut, setFadeOut] = useState(false);
 
   const handleEnter = () => {
     setFadeOut(true);
-    setTimeout(() => setVisible(false), 800);
+    setTimeout(() => onEnter(), 800);
   };
-
-  if (!visible) return null;
 
   return (
     <div style={{
