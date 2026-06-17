@@ -33,7 +33,18 @@ function MapController() {
   const map = useMap();
   useEffect(() => {
     map.setView([35.8, 111.5], 5);
-    setTimeout(() => map.invalidateSize(), 100);
+    // Multiple delayed invalidations: cover overlay fades at 800ms
+    const t1 = setTimeout(() => map.invalidateSize(), 200);
+    const t2 = setTimeout(() => map.invalidateSize(), 600);
+    const t3 = setTimeout(() => map.invalidateSize(), 1200);
+    // ResizeObserver for continuous monitoring
+    const container = map.getContainer();
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(container);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      ro.disconnect();
+    };
   }, [map]);
   return null;
 }
@@ -61,8 +72,9 @@ export default function PlanMap() {
       scrollWheelZoom={true}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; 高德地图'
+        url="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
+        subdomains="1234"
       />
       <MapController />
       {filtered.map((site) => (
