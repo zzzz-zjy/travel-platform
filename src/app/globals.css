@@ -35,3 +35,8 @@ body {
 .leaflet-default-icon-path {
   background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png);
 }
+
+.plan-star-marker {
+  background: transparent !important;
+  border: none !important;
+}
