@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { PlanProvider } from "@/components/plan/PlanContext";
-import SelectionBar from "@/components/plan/SelectionBar";
 import ChinaMapWrapper from "@/components/china-map/ChinaMapWrapper";
 
 export default async function ExplorePage() {
@@ -20,7 +19,6 @@ export default async function ExplorePage() {
       }}>
         <ChinaMapWrapper />
       </div>
-      <SelectionBar />
     </PlanProvider>
   );
 }

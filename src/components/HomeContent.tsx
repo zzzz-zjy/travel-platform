@@ -3,8 +3,6 @@
 import { useState } from "react";
 import CoverOverlay from "@/components/CoverOverlay";
 import ChinaMapWrapper from "@/components/china-map/ChinaMapWrapper";
-import SelectionBar from "@/components/plan/SelectionBar";
-
 export default function HomeContent() {
   const [entered, setEntered] = useState(false);
 
@@ -13,14 +11,11 @@ export default function HomeContent() {
   }
 
   return (
-    <>
-      <div style={{
-        position: "fixed", top: 42, bottom: 56, left: 0, right: 0,
-        overflow: "hidden",
-      }}>
-        <ChinaMapWrapper />
-      </div>
-      <SelectionBar />
-    </>
+    <div style={{
+      position: "fixed", top: 42, bottom: 56, left: 0, right: 0,
+      overflow: "hidden",
+    }}>
+      <ChinaMapWrapper />
+    </div>
   );
 }
