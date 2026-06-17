@@ -23,11 +23,11 @@ const path = require("path");
   // Screenshot
   const outDir = path.resolve(__dirname, "../../../Desktop");
   await page.screenshot({
-    path: path.join(outDir, "红途_封面.png"),
+    path: path.join(outDir, "青途智红_封面.png"),
     type: "png",
     fullPage: false,
   });
 
-  console.log("Done: " + path.join(outDir, "红途_封面.png"));
+  console.log("Done: " + path.join(outDir, "青途智红_封面.png"));
   await browser.close();
 })();

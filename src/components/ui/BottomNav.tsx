@@ -3,10 +3,10 @@
 import { usePathname, useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
-  { path: "/", label: "首页", icon: "🏠" },
-  { path: "/explore", label: "探索", icon: "🔍" },
+  { path: "/plan", label: "研学规划", icon: "🗺️" },
+  { path: "/explore", label: "地图", icon: "🌏" },
   { path: "/narrator", label: "AI讲解员", icon: "🤖" },
-  { path: "/journeys", label: "研学广场", icon: "🗺️" },
+  { path: "/journeys", label: "研学广场", icon: "📋" },
   { path: "/my", label: "我的", icon: "👤" },
 ];
 
