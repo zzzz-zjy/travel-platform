@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   }
   const { messages, guideContext } = await request.json();
 
-  const systemPrompt = `你是"红色记忆"平台的AI革命历史讲解员。以下是用户正在浏览的革命旧址信息：
+  const systemPrompt = `你是"青途智红"平台的AI革命历史讲解员。以下是用户正在浏览的革命旧址信息：
 
 ${guideContext}
 

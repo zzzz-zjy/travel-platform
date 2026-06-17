@@ -11,7 +11,7 @@ export default function AINarrator() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "你好！我是红色记忆AI讲解员。你可以问我关于任何革命旧址、历史事件或人物的问题，比如：\n\n• 遵义会议为什么是转折点？\n• 帮我规划一个延安3日研学路线\n• 介绍井冈山革命根据地的历史",
+      content: "你好！我是青途智红AI讲解员。你可以问我关于任何革命旧址、历史事件或人物的问题，比如：\n\n• 遵义会议为什么是转折点？\n• 帮我规划一个延安3日研学路线\n• 介绍井冈山革命根据地的历史",
     },
   ]);
   const [input, setInput] = useState("");

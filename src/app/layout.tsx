@@ -6,8 +6,8 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
 export const metadata: Metadata = {
-  title: "红色记忆 — 革命旧址与博物馆数字教育平台",
-  description: "通过3D中国地图探索革命旧址，AI讲解员带你深度了解革命历史",
+  title: "青途智红 — AI赋能青年学子革命旧址沉浸式研学育人平台",
+  description: "通过3D中国地图探索革命旧址，AI讲解员带你沉浸式研学革命历史",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

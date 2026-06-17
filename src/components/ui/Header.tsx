@@ -15,7 +15,7 @@ export default function Header() {
     }}>
       <Link href="/" style={{ textDecoration: "none", color: "white" }}>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, fontFamily: "var(--font-heading)" }}>
-          红色记忆
+          青途智红
         </h1>
       </Link>
       <div style={{ display: "flex", gap: 12, alignItems: "center" }}>

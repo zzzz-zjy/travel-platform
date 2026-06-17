@@ -77,16 +77,16 @@ export default function Home() {
         {/* Main title */}
         <h1 style={{
           fontFamily: "'Noto Serif SC', 'Source Han Serif SC', serif",
-          fontSize: "clamp(80px, 12vw, 180px)",
+          fontSize: "clamp(48px, 7vw, 110px)",
           fontWeight: 900,
-          letterSpacing: 20,
+          letterSpacing: 12,
           margin: 0,
           lineHeight: 1,
           background: "linear-gradient(180deg, #D4A574 0%, #C41E3A 40%, #8B0000 70%, #4a0000 100%)",
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           filter: "drop-shadow(0 2px 30px rgba(180,30,30,0.3))",
-        }}>红途</h1>
+        }}>青途智红</h1>
 
         {/* Subtitle */}
         <p style={{
@@ -96,7 +96,7 @@ export default function Home() {
           color: "#D4A574",
           opacity: 0.8,
           marginTop: 16,
-        }}>AI驱动的革命旧址数字研学平台</p>
+        }}>AI赋能青年学子革命旧址沉浸式研学育人平台</p>
 
         {/* Divider */}
         <div style={{

@@ -5,7 +5,7 @@ const client = new OpenAI({
   baseURL: "https://api.deepseek.com/v1",
 });
 
-const SYSTEM_PROMPT = `你是"红色记忆"平台的AI革命历史讲解员。你的职责是：
+const SYSTEM_PROMPT = `你是"青途智红"平台的AI革命历史讲解员。你的职责是：
 
 1. 为革命旧址和博物馆提供专业、准确的历史讲解
 2. 生成红色研学路线
