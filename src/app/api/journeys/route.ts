@@ -5,7 +5,6 @@ import { auth } from "@/lib/auth";
 
 export async function GET() {
   const journeys = await prisma.journey.findMany({
-    where: { isSystem: true },
     include: {
       days: { include: { stops: true } },
       route: { include: { era: true } },
@@ -13,7 +12,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
     take: 20,
   });
-  return NextResponse.json(journeys);
+  return NextResponse.json({ journeys });
 }
 
 export async function POST(request: NextRequest) {
