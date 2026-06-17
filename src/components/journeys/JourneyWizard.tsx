@@ -25,6 +25,7 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
   const [hydrated, setHydrated] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
+  const pendingPlan = useRef<any>(null);
 
   const STORAGE_KEY = "journeyWizardState";
 
@@ -121,45 +122,10 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
         try {
           const jsonStr = full.substring(full.indexOf("{"), full.lastIndexOf("}") + 1);
           const parsed = JSON.parse(jsonStr);
-          setMessages((prev) => [...prev, { role: "assistant", content: "研学路线已生成！正在保存..." }]);
-
-          const saveRes = await fetch("/api/journeys", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: parsed.title,
-              totalDays: parsed.days?.length || 3,
-              budgetAmount: parsed.totalBudget || 2000,
-              transportMode: parsed.transport || "大巴+步行",
-              travelStyle: "研学",
-              departureCity: departureCity || null,
-              departureDate: departureDate || null,
-              rawJson: JSON.stringify(parsed),
-              days: (parsed.days || []).map((d: any) => ({
-                dayNumber: d.day,
-                title: d.title || "",
-                notes: "",
-                stops: (d.items || []).map((i: any) => ({
-                  timeSlot: i.time || "",
-                  customSpot: i.spot || "",
-                  durationMin: i.duration || 60,
-                  tips: i.tip || "",
-                  transportTip: i.transportTip || "",
-                })),
-              })),
-            }),
-          });
-          if (!saveRes.ok) {
-            const errText = await saveRes.text();
-            setMessages((prev) => [...prev, { role: "assistant", content: `保存失败(${saveRes.status}): ${errText}` }]);
-            setLoading(false);
-            return;
-          }
-          const saved = await saveRes.json();
-          sessionStorage.removeItem(STORAGE_KEY);
-          setTimeout(() => router.push(`/journeys/${saved.id}`), 1500);
+          pendingPlan.current = parsed;
+          setMessages((prev) => [...prev, { role: "assistant", content: "✅ 研学路线已生成！请点击下方按钮保存方案。" }]);
         } catch (e: any) {
-          setMessages((prev) => [...prev, { role: "assistant", content: `保存出错: ${e.message}` }]);
+          setMessages((prev) => [...prev, { role: "assistant", content: `解析出错: ${e.message}` }]);
         }
       }
     } catch (e: any) {
@@ -173,6 +139,52 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
     setMessages(updated);
     if (phase === "greeting") setPhase("asking");
     await streamChat(updated);
+  };
+
+  const savePlan = async () => {
+    const parsed = pendingPlan.current;
+    if (!parsed) return;
+    setLoading(true);
+    try {
+      const saveRes = await fetch("/api/journeys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: parsed.title,
+          totalDays: parsed.days?.length || 3,
+          budgetAmount: parsed.totalBudget || 2000,
+          transportMode: parsed.transport || "大巴+步行",
+          travelStyle: "研学",
+          departureCity: departureCity || null,
+          departureDate: departureDate || null,
+          rawJson: JSON.stringify(parsed),
+          days: (parsed.days || []).map((d: any) => ({
+            dayNumber: d.day,
+            title: d.title || "",
+            notes: "",
+            stops: (d.items || []).map((i: any) => ({
+              timeSlot: i.time || "",
+              customSpot: i.spot || "",
+              durationMin: i.duration || 60,
+              tips: i.tip || "",
+              transportTip: i.transportTip || "",
+            })),
+          })),
+        }),
+      });
+      if (!saveRes.ok) {
+        const errText = await saveRes.text();
+        setMessages((prev) => [...prev, { role: "assistant", content: `保存失败: ${errText}` }]);
+        return;
+      }
+      const saved = await saveRes.json();
+      sessionStorage.removeItem(STORAGE_KEY);
+      setMessages((prev) => [...prev, { role: "assistant", content: "💾 方案已保存！正在跳转..." }]);
+      setTimeout(() => router.push(`/journeys/${saved.id}`), 1000);
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: `保存出错: ${e.message}` }]);
+    }
+    setLoading(false);
   };
 
   const send = async () => {
@@ -267,6 +279,22 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
           ))}
           <div ref={bottomRef} />
         </div>
+
+        {/* Save button — shown when plan is generated */}
+        {phase === "done" && (
+          <div style={{ padding: "12px 16px", borderTop: "1px solid #f0e0d0", textAlign: "center" }}>
+            <button onClick={savePlan} disabled={loading} style={{
+              padding: "12px 48px", borderRadius: 10, border: "none",
+              background: loading ? "#ccc" : "linear-gradient(135deg, #C41E3A, #8B0000)",
+              color: "white", fontSize: 16, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+            }}>
+              {loading ? "保存中..." : "💾 保存方案"}
+            </button>
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "#999" }}>
+              保存后可查看详细日程，或继续对话优化方案
+            </p>
+          </div>
+        )}
 
         {/* Input */}
         <div style={{ padding: 12, borderTop: "1px solid #f0e0d0" }}>
