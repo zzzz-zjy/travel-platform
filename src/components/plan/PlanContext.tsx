@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo } from "react";
 
-interface SiteBrief {
+export interface SiteBrief {
   id: number;
   name: string;
   siteType: string;
@@ -24,7 +24,7 @@ interface PlanState {
   allSites: SiteBrief[];
 }
 
-interface PlanActions {
+export interface PlanActions {
   toggleSite: (site: SiteBrief) => void;
   removeSite: (id: number) => void;
   clearAll: () => void;
@@ -36,6 +36,7 @@ interface PlanActions {
 }
 
 const PlanContext = createContext<(PlanState & PlanActions) | null>(null);
+PlanContext.displayName = "PlanContext";
 
 const STORAGE_KEY = "planSelectedSites";
 
@@ -48,20 +49,29 @@ function loadFromStorage(): number[] {
 }
 
 function saveToStorage(ids: Set<number>) {
+  if (typeof window === "undefined") return;
   try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify([...ids])); } catch {}
 }
 
 export function PlanProvider({ children, sites }: { children: React.ReactNode; sites: SiteBrief[] }) {
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set(loadFromStorage()));
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [sceneMode, setSceneMode] = useState<PlanState["sceneMode"]>(null);
   const [days, setDays] = useState(3);
   const [budget, setBudget] = useState(3000);
   const [provinceFilter, setProvinceFilter] = useState<string | null>(null);
   const [eraFilter, setEraFilter] = useState<string | null>(null);
 
+  // Hydrate from sessionStorage after mount (avoids SSR mismatch)
+  useEffect(() => {
+    setSelectedIds(new Set(loadFromStorage()));
+  }, []);
+
   useEffect(() => { saveToStorage(selectedIds); }, [selectedIds]);
 
-  const selectedSites = sites.filter((s) => selectedIds.has(s.id));
+  const selectedSites = useMemo(
+    () => sites.filter((s) => selectedIds.has(s.id)),
+    [sites, selectedIds]
+  );
 
   const toggleSite = useCallback((site: SiteBrief) => {
     setSelectedIds((prev) => {
@@ -77,13 +87,17 @@ export function PlanProvider({ children, sites }: { children: React.ReactNode; s
 
   const clearAll = useCallback(() => setSelectedIds(new Set()), []);
 
+  const value = useMemo(() => ({
+    selectedIds, selectedSites, sceneMode, days, budget,
+    provinceFilter, eraFilter, allSites: sites,
+    toggleSite, removeSite, clearAll,
+    setSceneMode, setDays, setBudget, setProvinceFilter, setEraFilter,
+  }), [selectedIds, selectedSites, sceneMode, days, budget,
+      provinceFilter, eraFilter, sites,
+      toggleSite, removeSite, clearAll]);
+
   return (
-    <PlanContext.Provider value={{
-      selectedIds, selectedSites, sceneMode, days, budget,
-      provinceFilter, eraFilter, allSites: sites,
-      toggleSite, removeSite, clearAll,
-      setSceneMode, setDays, setBudget, setProvinceFilter, setEraFilter,
-    }}>
+    <PlanContext.Provider value={value}>
       {children}
     </PlanContext.Provider>
   );

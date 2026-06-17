@@ -22,12 +22,15 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
   const [phase, setPhase] = useState<"greeting" | "asking" | "generating" | "done">("greeting");
   const [departureCity, setDepartureCity] = useState("");
   const [departureDate, setDepartureDate] = useState("");
+  const [hydrated, setHydrated] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
 
   const STORAGE_KEY = "journeyWizardState";
 
+  // Load saved state from sessionStorage first, then mark hydrated
   useEffect(() => {
+    let restored = false;
     try {
       const saved = sessionStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -35,22 +38,30 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
         if (savedMsgs?.length > 0) {
           setMessages(savedMsgs);
           setPhase(savedPhase || "asking");
+          restored = true;
         }
       }
     } catch {}
+    // Clear stale storage if nothing was restored
+    if (!restored) {
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (messages.length > 0) {
+    if (hydrated && messages.length > 0) {
       try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ messages, phase })); } catch {}
     }
-  }, [messages, phase]);
+  }, [messages, phase, hydrated]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Only send initialPrompt after hydration, and only if nothing was restored
   useEffect(() => {
+    if (!hydrated) return;
     if (initialPrompt && !initialSent.current && messages.length === 0) {
       initialSent.current = true;
       const userMsg: Message = { role: "user", content: initialPrompt };
@@ -58,7 +69,7 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
       setPhase("asking");
       sendWith(userMsg);
     }
-  }, [initialPrompt]);
+  }, [initialPrompt, hydrated]);
 
   const streamChat = async (msgs: Message[]) => {
     setLoading(true);
@@ -177,6 +188,15 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
     setInput("");
     sendWith({ role: "user", content: preset.prompt });
   };
+
+  if (!hydrated) {
+    return (
+      <div style={{ maxWidth: 700, margin: "0 auto", padding: "32px 16px", textAlign: "center" }}>
+        <p style={{ fontSize: 28, margin: 0 }}>⏳</p>
+        <p style={{ marginTop: 8, fontSize: 14, color: "#999" }}>加载中...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 700, margin: "0 auto" }}>
