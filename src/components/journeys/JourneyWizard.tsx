@@ -179,8 +179,8 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
       }
       const saved = await saveRes.json();
       sessionStorage.removeItem(STORAGE_KEY);
-      setMessages((prev) => [...prev, { role: "assistant", content: "💾 方案已保存！正在跳转..." }]);
-      setTimeout(() => router.push(`/journeys/${saved.id}`), 1000);
+      setMessages((prev) => [...prev, { role: "assistant", content: "💾 方案已保存到「我的」！" }]);
+      setTimeout(() => router.push("/my"), 1000);
     } catch (e: any) {
       setMessages((prev) => [...prev, { role: "assistant", content: `保存出错: ${e.message}` }]);
     }

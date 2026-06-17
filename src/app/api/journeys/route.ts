@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 
 export async function GET() {
   const journeys = await prisma.journey.findMany({
+    where: { isSystem: true },
     include: {
       days: { include: { stops: true } },
       route: { include: { era: true } },
