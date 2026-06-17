@@ -1,11 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { PlanProvider } from "@/components/plan/PlanContext";
-import PlanMapWrapper from "@/components/plan/PlanMapWrapper";
-import PlanPanel from "@/components/plan/PlanPanel";
 import SelectionBar from "@/components/plan/SelectionBar";
 import CoverOverlay from "@/components/CoverOverlay";
+import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
+
+const ChinaMapScene = nextDynamic(() => import("@/components/china-map/ChinaMapScene"), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      height: "calc(100vh - 48px - 56px)", background: "#0a0202",
+      color: "#D4A574", fontSize: 16,
+    }}>加载地图中...</div>
+  ),
+});
 
 export default async function Home() {
   const sites = await prisma.site.findMany({
@@ -20,14 +30,8 @@ export default async function Home() {
     <PlanProvider sites={sites}>
       <CoverOverlay />
 
-      <div style={{ display: "flex", height: "calc(100vh - 48px - 56px)", overflow: "hidden" }}>
-        <div style={{ flex: 1, position: "relative" }}>
-          <PlanMapWrapper />
-        </div>
-
-        <div style={{ width: 300, minWidth: 300, padding: "12px" }}>
-          <PlanPanel />
-        </div>
+      <div style={{ height: "calc(100vh - 48px - 56px)", overflow: "hidden" }}>
+        <ChinaMapScene />
       </div>
 
       <SelectionBar />
