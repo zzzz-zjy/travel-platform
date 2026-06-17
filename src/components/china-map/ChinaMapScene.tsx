@@ -22,7 +22,7 @@ function createStarIcon(size: number = 26) {
 
 export default function ChinaMapScene() {
   const router = useRouter();
-  const { allSites, selectedIds, toggleSite, selectedSites, days, budget, sceneMode } = usePlan();
+  const { allSites, selectedIds, toggleSite, selectedSites, days, budget, sceneMode, setDays, setBudget, setSceneMode } = usePlan();
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -94,38 +94,18 @@ export default function ChinaMapScene() {
         <div style={{ color: "#666" }}>{allSites.length} 个革命旧址 · 11 个省份</div>
       </div>
 
-      {/* Selected sites floating panel - appears on right when sites selected */}
-      {selectedSites.length > 0 && (
-        <div style={{
-          position: "absolute", top: 44, right: 8, zIndex: 1000,
-          background: "white", borderRadius: 12, width: 260,
-          boxShadow: "0 4px 24px rgba(0,0,0,0.15)", padding: 16,
-          maxHeight: "calc(100% - 120px)", overflowY: "auto",
-        }}>
-          <h4 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: "#8B0000" }}>
-            📍 已选旧址 ({selectedSites.length})
-          </h4>
-          {selectedSites.map((s) => (
-            <div key={s.id} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "6px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13,
-            }}>
-              <span style={{ flex: 1 }}>{s.name}</span>
-              <button onClick={() => toggleSite(s)} style={{
-                background: "none", border: "none", color: "#999",
-                cursor: "pointer", fontSize: 16, padding: "0 4px",
-              }}>×</button>
-            </div>
-          ))}
-          <button onClick={handleGenerate} style={{
-            width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 8,
-            border: "none", background: "linear-gradient(135deg, #C41E3A, #8B0000)",
-            color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
-          }}>
-            ✨ 生成研学路线
-          </button>
-        </div>
-      )}
+      {/* Floating panel - slides in from right */}
+      <FloatingPanel
+        selectedSites={selectedSites}
+        days={days}
+        budget={budget}
+        sceneMode={sceneMode}
+        onToggle={toggleSite}
+        onSetDays={setDays}
+        onSetBudget={setBudget}
+        onSetSceneMode={setSceneMode}
+        onGenerate={handleGenerate}
+      />
 
       <style jsx global>{`
         .china-map-star {
@@ -133,6 +113,121 @@ export default function ChinaMapScene() {
           border: none !important;
         }
       `}</style>
+    </div>
+  );
+}
+
+function FloatingPanel({
+  selectedSites, days, budget, sceneMode,
+  onToggle, onSetDays, onSetBudget, onSetSceneMode, onGenerate,
+}: {
+  selectedSites: SiteBrief[];
+  days: number; budget: number;
+  sceneMode: "deep" | "route" | "quick" | null;
+  onToggle: (site: SiteBrief) => void;
+  onSetDays: (d: number) => void;
+  onSetBudget: (b: number) => void;
+  onSetSceneMode: (m: "deep" | "route" | "quick" | null) => void;
+  onGenerate: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  if (selectedSites.length === 0) return null;
+
+  return (
+    <div style={{
+      position: "absolute", top: 44, right: 8, zIndex: 1000,
+      background: "white", borderRadius: 12, width: 272,
+      boxShadow: "0 4px 24px rgba(0,0,0,0.15)", padding: 16,
+      maxHeight: "calc(100% - 100px)", overflowY: "auto",
+    }}>
+      <h4 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 700, color: "#8B0000" }}>
+        📍 已选旧址 ({selectedSites.length})
+      </h4>
+
+      {selectedSites.map((s) => (
+        <div key={s.id} style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "6px 0", borderBottom: "1px solid #f5f5f5", fontSize: 13,
+        }}>
+          <span style={{ flex: 1 }}>{s.name}</span>
+          <button onClick={() => onToggle(s)} style={{
+            background: "none", border: "none", color: "#999",
+            cursor: "pointer", fontSize: 16, padding: "0 4px",
+          }}>×</button>
+        </div>
+      ))}
+
+      {!expanded ? (
+        <button onClick={() => setExpanded(true)} style={{
+          width: "100%", marginTop: 12, padding: "10px 0", borderRadius: 8,
+          border: "1px solid #C41E3A", background: "white",
+          color: "#C41E3A", fontSize: 14, fontWeight: 600, cursor: "pointer",
+        }}>
+          ⚙️ 继续设置偏好
+        </button>
+      ) : (
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Scene mode */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#8B0000", marginBottom: 6 }}>场景模式</div>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {[
+                { key: "deep", label: "📚 深度研学" },
+                { key: "route", label: "🗺️ 主题路线" },
+                { key: "quick", label: "⚡ 精华速览" },
+              ].map((m) => (
+                <button key={m.key} onClick={() => onSetSceneMode(sceneMode === m.key ? null : m.key as any)} style={{
+                  padding: "4px 10px", borderRadius: 99, fontSize: 11,
+                  border: sceneMode === m.key ? "1px solid #C41E3A" : "1px solid #e0d0c0",
+                  background: sceneMode === m.key ? "#C41E3A" : "white",
+                  color: sceneMode === m.key ? "white" : "#666",
+                  cursor: "pointer",
+                }}>{m.label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Days */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#8B0000", marginBottom: 6 }}>计划天数</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[1, 2, 3, 5, 7].map((d) => (
+                <button key={d} onClick={() => onSetDays(d)} style={{
+                  padding: "4px 12px", borderRadius: 99, fontSize: 12,
+                  border: days === d ? "1px solid #C41E3A" : "1px solid #e0d0c0",
+                  background: days === d ? "#C41E3A" : "white",
+                  color: days === d ? "white" : "#666",
+                  cursor: "pointer",
+                }}>{d}天</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Budget */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#8B0000", marginBottom: 6 }}>人均预算</div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[1000, 2000, 3000, 5000, 8000].map((b) => (
+                <button key={b} onClick={() => onSetBudget(b)} style={{
+                  padding: "4px 8px", borderRadius: 99, fontSize: 11,
+                  border: budget === b ? "1px solid #C41E3A" : "1px solid #e0d0c0",
+                  background: budget === b ? "#C41E3A" : "white",
+                  color: budget === b ? "white" : "#666",
+                  cursor: "pointer",
+                }}>¥{b / 1000}k</button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={onGenerate} style={{
+            width: "100%", marginTop: 4, padding: "10px 0", borderRadius: 8,
+            border: "none", background: "linear-gradient(135deg, #C41E3A, #8B0000)",
+            color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer",
+          }}>
+            ✨ 生成研学路线
+          </button>
+        </div>
+      )}
     </div>
   );
 }

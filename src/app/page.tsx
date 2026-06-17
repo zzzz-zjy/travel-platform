@@ -18,7 +18,7 @@ export default async function Home() {
   return (
     <PlanProvider sites={sites}>
       <CoverOverlay />
-      <div style={{ height: "calc(100vh - 48px - 56px)", overflow: "hidden" }}>
+      <div style={{ height: "calc(100vh - 44px - 56px)", overflow: "hidden" }}>
         <ChinaMapWrapper />
       </div>
       <SelectionBar />
