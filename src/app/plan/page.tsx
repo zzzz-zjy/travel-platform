@@ -1,8 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { PlanProvider } from "@/components/plan/PlanContext";
-import PlanMap from "@/components/plan/PlanMap";
 import PlanPanel from "@/components/plan/PlanPanel";
 import SelectionBar from "@/components/plan/SelectionBar";
+import dynamic from "next/dynamic";
+
+const PlanMap = dynamic(() => import("@/components/plan/PlanMap"), {
+  ssr: false,
+  loading: () => (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      height: "100%", background: "#FDF8F0", borderRadius: 12,
+      color: "#8B0000", fontSize: 16,
+    }}>加载地图中...</div>
+  ),
+});
+
+export const dynamic = "force-dynamic";
 
 export default async function PlanPage() {
   const sites = await prisma.site.findMany({
