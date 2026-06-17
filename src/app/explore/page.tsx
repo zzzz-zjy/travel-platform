@@ -14,7 +14,10 @@ export default async function ExplorePage() {
 
   return (
     <PlanProvider sites={sites}>
-      <div style={{ height: "calc(100vh - 44px - 56px)", overflow: "hidden" }}>
+      <div style={{
+        position: "fixed", top: 42, bottom: 56, left: 0, right: 0,
+        overflow: "hidden",
+      }}>
         <ChinaMapWrapper />
       </div>
       <SelectionBar />
