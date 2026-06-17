@@ -78,7 +78,10 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           ticketInfo: "免费，公众号预约", transportTips: "地铁1号线黄陂南路站2号口出",
           description: "中国共产党的诞生地",
           historicalBg: "1921年7月23日，中国共产党第一次全国代表大会在此召开。来自全国各地的13名代表，代表全国50多名党员，在这里宣告了中国共产党的成立。会议最后一天因法租界巡捕袭扰，转移到浙江嘉兴南湖的游船上继续举行。",
-          images: [],
+          images: [
+            "https://images.unsplash.com/photo-1559827269-dc5c52c3a5c8?w=800",
+            "https://images.unsplash.com/photo-1523740856324-f2ce89135981?w=800",
+          ],
         },
         {
           name: "中共二大会址纪念馆", siteType: "旧址",
@@ -151,7 +154,11 @@ export const REVOLUTION_SEED: Record<string, SeedProvince> = {
           ticketInfo: "免费，凭身份证领票", transportTips: "延安站乘K1路公交至王家坪",
           description: "中国革命从延安走向全国的见证",
           historicalBg: "1935年至1948年，延安是中共中央所在地。十三年间，党中央在此领导了抗日战争和解放战争，形成了以坚定正确的政治方向、解放思想实事求是、全心全意为人民服务、自力更生艰苦奋斗为核心的延安精神。",
-          images: [],
+          images: [
+            "https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=800",
+            "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800",
+            "https://images.unsplash.com/photo-1587132129911-60e644935524?w=800",
+          ],
         },
         {
           name: "杨家岭革命旧址", siteType: "旧址",

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ImageGallery from "./ImageGallery";
+import VoiceNarrator from "./VoiceNarrator";
 
 interface SiteData {
   id: number;
@@ -72,18 +74,41 @@ export default function SiteDetail({ site }: { site: SiteData }) {
         </div>
       </div>
 
+      {/* Image Gallery */}
+      {(() => {
+        try {
+          const imgs = JSON.parse(site.images || "[]");
+          if (imgs.length > 0) return (
+            <section style={{ marginBottom: 16 }}>
+              <h2 style={{
+                fontSize: 18, fontWeight: 600, marginBottom: 12,
+                fontFamily: "var(--font-heading)", color: "var(--color-primary)",
+                borderLeft: "4px solid var(--color-primary-light)", paddingLeft: 10,
+              }}>
+                旧址实景
+              </h2>
+              <ImageGallery images={imgs} />
+            </section>
+          );
+        } catch {}
+        return null;
+      })()}
+
       {/* Historical Background */}
       <section style={{
         background: "white", borderRadius: 12, padding: 20, marginBottom: 16,
         border: "1px solid #f0e0d0",
       }}>
-        <h2 style={{
-          fontSize: 18, fontWeight: 600, marginBottom: 12,
-          fontFamily: "var(--font-heading)", color: "var(--color-primary)",
-          borderLeft: "4px solid var(--color-primary-light)", paddingLeft: 10,
-        }}>
-          历史背景
-        </h2>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <h2 style={{
+            fontSize: 18, fontWeight: 600, margin: 0,
+            fontFamily: "var(--font-heading)", color: "var(--color-primary)",
+            borderLeft: "4px solid var(--color-primary-light)", paddingLeft: 10,
+          }}>
+            历史背景
+          </h2>
+          <VoiceNarrator text={site.historicalBg} title={site.name} />
+        </div>
         <p style={{ lineHeight: 1.9, fontSize: 15, color: "#333" }}>
           {site.historicalBg}
         </p>
