@@ -1,79 +1,128 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import GuideList from "@/components/guides/GuideList";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function MyPage() {
-  const [tab, setTab] = useState<"my" | "fav">("my");
-  const [guides, setGuides] = useState<any[]>([]);
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as "fav" | "journeys") || "fav";
+  const [tab, setTab] = useState<"fav" | "journeys">(initialTab);
+  const [sites, setSites] = useState<any[]>([]);
+  const [journeys, setJourneys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     setLoading(true);
-    const url = tab === "my" ? "/api/my/guides" : "/api/favorites";
-    const token = localStorage.getItem("auth_token");
-    const headers: any = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    fetch(url, { headers })
-      .then((r) => { if (r.status === 401) window.location.href = "/login"; return r.json(); })
-      .then((data) => setGuides(Array.isArray(data) ? data : (data.guides || [])))
-      .finally(() => setLoading(false));
+    if (tab === "fav") {
+      fetch("/api/favorites")
+        .then(r => { if (r.status === 401) { setSites([]); setLoading(false); return null; } return r.json(); })
+        .then(data => { if (data) setSites(data.favorites || []); setLoading(false); })
+        .catch(() => setLoading(false));
+    } else {
+      fetch("/api/my/journeys")
+        .then(r => { if (r.status === 401) { setJourneys([]); setLoading(false); return null; } return r.json(); })
+        .then(data => { if (data) setJourneys(data.journeys || []); setLoading(false); })
+        .catch(() => setLoading(false));
+    }
   }, [tab]);
 
+  const tabs = [
+    { key: "fav", label: "⭐ 我的收藏", count: sites.length },
+    { key: "journeys", label: "📝 我的研学", count: journeys.length },
+  ];
+
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px" }}>
-      <Link href="/explore/cn" style={{ color: "#2563eb", textDecoration: "none", fontSize: 14, marginBottom: 16, display: "inline-block" }}>
-        ← 返回地图
-      </Link>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div style={{ display: "flex", gap: 4, background: "#f3f4f6", borderRadius: 10, padding: 4 }}>
-          {[
-            { key: "my", label: "📝 我的攻略", count: guides.length },
-            { key: "fav", label: "⭐ 我的收藏", count: guides.length },
-          ].map((t: any) => (
-            <button key={t.key} onClick={() => setTab(t.key)} style={{
-              padding: "10px 20px", borderRadius: 8, border: "none", cursor: "pointer",
-              fontSize: 14, fontWeight: tab === t.key ? "bold" : "normal",
-              background: tab === t.key ? "white" : "transparent",
-              boxShadow: tab === t.key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-            }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <Link href="/guide/new" style={{
-          background: "#2563eb", color: "white", padding: "12px 24px",
-          borderRadius: 12, fontWeight: "bold", textDecoration: "none",
+    <div style={{ maxWidth: 768, margin: "0 auto", padding: "16px" }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 20, fontFamily: "var(--font-heading)", color: "var(--color-primary)" }}>
+        我的
+      </h1>
+
+      <div style={{ display: "flex", gap: 4, background: "#f3f4f6", borderRadius: 10, padding: 4, marginBottom: 20 }}>
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key as any)} style={{
+            padding: "10px 20px", borderRadius: 8, border: "none", cursor: "pointer",
+            fontSize: 14, fontWeight: tab === t.key ? 600 : 400,
+            background: tab === t.key ? "white" : "transparent",
+            boxShadow: tab === t.key ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+          }}>
+            {t.label}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <button onClick={() => router.push("/journey/new")} style={{
+          background: "var(--color-primary-light)", color: "white",
+          padding: "10px 20px", borderRadius: 8, border: "none",
+          fontWeight: 600, fontSize: 14, cursor: "pointer",
         }}>
-          ✨ 创建新攻略
-        </Link>
+          ✨ 创建研学
+        </button>
       </div>
 
       {loading ? (
-        <p style={{ textAlign: "center", color: "#9ca3af", padding: 60 }}>加载中...</p>
-      ) : guides.length === 0 ? (
-        <div style={{ textAlign: "center", padding: 80 }}>
-          <p style={{ fontSize: 48, margin: 0 }}>{tab === "my" ? "📝" : "⭐"}</p>
-          <p style={{ color: "#9ca3af", marginTop: 16, fontSize: 16 }}>
-            {tab === "my" ? "还没有生成任何攻略" : "还没有收藏任何攻略"}
-          </p>
-          {tab === "my" && (
-            <Link href="/guide/new" style={{
-              display: "inline-block", marginTop: 16, background: "#2563eb",
-              color: "white", padding: "12px 24px", borderRadius: 12,
-              fontWeight: "bold", textDecoration: "none",
-            }}>立即创建</Link>
-          )}
-          {tab === "fav" && (
-            <Link href="/guides" style={{
-              display: "inline-block", marginTop: 16, color: "#2563eb",
-              fontSize: 16, textDecoration: "none",
-            }}>去攻略广场看看</Link>
-          )}
-        </div>
+        <p style={{ textAlign: "center", color: "#999", padding: 60 }}>加载中...</p>
+      ) : tab === "fav" ? (
+        sites.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 60 }}>
+            <p style={{ fontSize: 48, margin: 0 }}>⭐</p>
+            <p style={{ color: "#999", marginTop: 12 }}>还没有收藏革命旧址</p>
+            <p style={{ color: "#999", fontSize: 13 }}>在地图上探索并收藏感兴趣的旧址</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {sites.map((site: any) => (
+              <button key={site.id} onClick={() => router.push(`/site/${site.id}`)} style={{
+                display: "flex", alignItems: "center", gap: 12,
+                background: "white", border: "1px solid #f0e0d0", borderRadius: 12,
+                padding: "14px 16px", cursor: "pointer", textAlign: "left",
+              }}>
+                <span style={{
+                  background: site.era?.color || "#C41E3A", color: "white",
+                  padding: "4px 10px", borderRadius: 9999, fontSize: 11,
+                }}>
+                  {site.siteType}
+                </span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15 }}>{site.name}</div>
+                  <div style={{ fontSize: 13, color: "#999", marginTop: 2 }}>
+                    {site.city?.province?.name} · {site.city?.name}
+                  </div>
+                </div>
+                <span style={{ color: "#C41E3A" }}>→</span>
+              </button>
+            ))}
+          </div>
+        )
       ) : (
-        <GuideList guides={guides} />
+        journeys.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 60 }}>
+            <p style={{ fontSize: 48, margin: 0 }}>📝</p>
+            <p style={{ color: "#999", marginTop: 12 }}>还没有创建研学路线</p>
+            <button onClick={() => router.push("/journey/new")} style={{
+              marginTop: 16, background: "var(--color-primary-light)", color: "white",
+              padding: "12px 24px", borderRadius: 12, border: "none",
+              fontWeight: 600, cursor: "pointer",
+            }}>立即创建</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {journeys.map((j: any) => (
+              <button key={j.id} onClick={() => router.push(`/journeys/${j.id}`)} style={{
+                display: "flex", alignItems: "center", gap: 12,
+                background: "white", border: "1px solid #f0e0d0", borderRadius: 12,
+                padding: "14px 16px", cursor: "pointer", textAlign: "left",
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15 }}>{j.title}</div>
+                  <div style={{ fontSize: 13, color: "#999", marginTop: 2 }}>
+                    {j.totalDays}天 · ¥{j.budgetAmount}
+                  </div>
+                </div>
+                <span style={{ color: "#C41E3A" }}>→</span>
+              </button>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

@@ -17,12 +17,13 @@ export async function POST(request: NextRequest) {
   }
   const { messages, guideContext } = await request.json();
 
-  const systemPrompt = `你是一个旅游攻略调整助手。以下是用户当前的攻略：
+  const systemPrompt = `你是"青途智红"平台的AI革命历史讲解员。以下是用户正在浏览的革命旧址信息：
 
 ${guideContext}
 
-用户会提出修改要求（如"太贵了""想多去几个景点""换便宜的住宿"等），请根据要求调整攻略并输出完整的新攻略 JSON。
-输出纯 JSON，不要用 markdown 代码块。格式与原始攻略一致。`;
+用户会向你提出关于这个旧址的问题，请基于史料提供准确、专业的回答。
+如果用户问的问题超出你的知识范围，如实告知，不要编造。
+回答风格：专业但不枯燥，适合大学生理解。`;
 
   const response = await client.chat.completions.create({
     model: "deepseek-chat",

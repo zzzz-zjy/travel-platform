@@ -1,10 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PlanProvider } from "@/components/plan/PlanContext";
-import HomeContent from "@/components/HomeContent";
+import ChinaMapWrapper from "@/components/china-map/ChinaMapWrapper";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
+export default async function ExplorePage() {
   const sites = await prisma.site.findMany({
     select: {
       id: true, name: true, siteType: true, lat: true, lng: true, rating: true,
@@ -15,7 +13,12 @@ export default async function Home() {
 
   return (
     <PlanProvider sites={sites}>
-      <HomeContent />
+      <div style={{
+        position: "fixed", top: 42, bottom: 56, left: 0, right: 0,
+        overflow: "hidden",
+      }}>
+        <ChinaMapWrapper />
+      </div>
     </PlanProvider>
   );
 }

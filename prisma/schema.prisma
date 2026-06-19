@@ -6,159 +6,200 @@ datasource db {
   provider = "sqlite"
 }
 
-model Continent {
-  id            Int       @id @default(autoincrement())
-  name          String    @unique
-  boundsGeojson String    @map("bounds_geojson")
-  countries     Country[]
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  @@map("continents")
-}
-
-model Country {
+model Era {
   id          Int       @id @default(autoincrement())
-  continentId Int       @map("continent_id")
   name        String    @unique
-  slug        String    @unique
-  flagUrl     String?   @map("flag_url")
-  geojson     String?
-  continent   Continent @relation(fields: [continentId], references: [id])
-  provinces   Province[]
+  color       String    @default("#C41E3A")
+  startYear   Int       @map("start_year")
+  endYear     Int       @map("end_year")
+  description String
+  events      Event[]
+  persons     Person[]
+  routes      Route[]
+  sites       Site[]
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  @@map("countries")
+  @@map("eras")
 }
 
 model Province {
-  id        Int       @id @default(autoincrement())
-  countryId Int       @map("country_id")
-  name      String
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
   geojson   String?
-  country   Country   @relation(fields: [countryId], references: [id])
   cities    City[]
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("provinces")
 }
 
 model City {
-  id          Int          @id @default(autoincrement())
-  provinceId  Int          @map("province_id")
-  name        String
-  lat         Float
-  lng         Float
-  province    Province     @relation(fields: [provinceId], references: [id])
-  attractions Attraction[]
-  hotels      Hotel[]
-  guides      Guide[]
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id         Int      @id @default(autoincrement())
+  provinceId Int      @map("province_id")
+  name       String
+  lat        Float
+  lng        Float
+  province   Province @relation(fields: [provinceId], references: [id])
+  sites      Site[]
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   @@map("cities")
 }
 
-model Attraction {
-  id            Int        @id @default(autoincrement())
-  cityId        Int        @map("city_id")
+model Site {
+  id            Int           @id @default(autoincrement())
+  cityId        Int           @map("city_id")
+  eraId         Int           @map("era_id")
   name          String
-  category      String
+  siteType      String        @map("site_type")
   lat           Float
   lng           Float
-  rating        Float      @default(4.0)
-  images        String     @default("[]")
-  ticketInfo    String?    @map("ticket_info")
-  transportTips String?    @map("transport_tips")
+  rating        Float         @default(4.5)
+  images        String        @default("[]")
+  ticketInfo    String?       @map("ticket_info")
+  transportTips String?       @map("transport_tips")
   description   String?
-  source        String?
-  openHours     String?   @map("open_hours")
-  ratingCount   Int?      @map("rating_count")
-  city          City       @relation(fields: [cityId], references: [id])
-  guideItems    GuideItem[]
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  historicalBg  String        @map("historical_bg")
+  eventId       Int?          @map("event_id")
+  model3dUrl    String?       @map("model_3d_url")
+  audioUrl      String?       @map("audio_url")
+  openHours     String?       @map("open_hours")
+  city          City          @relation(fields: [cityId], references: [id])
+  era           Era           @relation(fields: [eraId], references: [id])
+  event         Event?        @relation(fields: [eventId], references: [id])
+  routeStops    RouteStop[]
+  journeyStops  JourneyStop[]
+  favorites     Favorite[]
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  @@map("attractions")
+  @@map("sites")
 }
 
-model Hotel {
-  id        Int      @id @default(autoincrement())
-  cityId    Int      @map("city_id")
-  name      String
-  lat       Float
-  lng       Float
-  price     Int?
-  rating    Float?
-  starLevel Int?     @map("star_level")
-  images    String   @default("[]")
-  amenities String   @default("[]")
-  address   String?
-  phone     String?
-  source    String?
-  city      City     @relation(fields: [cityId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+model Event {
+  id            Int      @id @default(autoincrement())
+  eraId         Int      @map("era_id")
+  name          String
+  date          String
+  location      String
+  description   String
+  significance  String
+  era           Era      @relation(fields: [eraId], references: [id])
+  sites         Site[]
+  eventPersons  EventPerson[]
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  @@map("hotels")
+  @@map("events")
 }
 
-model Guide {
-  id                Int        @id @default(autoincrement())
-  title             String
-  destinationCityId Int        @map("destination_city_id")
-  totalDays         Int        @map("total_days")
-  budgetAmount      Int        @map("budget_amount")
-  transportMode     String     @map("transport_mode")
-  travelStyle       String     @map("travel_style")
-  departureCity     String?    @map("departure_city")
-  departureDate     String?    @map("departure_date")
-  rawJson           String?    @map("raw_json")
-  isSystem          Boolean    @default(false) @map("is_system")
-  creatorIp         String?    @map("creator_ip")
-  userId            String?    @map("user_id")
-  user              User?      @relation(fields: [userId], references: [id])
-  destinationCity   City       @relation(fields: [destinationCityId], references: [id])
-  days              GuideDay[]
-  favorites         Favorite[]
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
+model Person {
+  id            Int           @id @default(autoincrement())
+  eraId         Int           @map("era_id")
+  name          String
+  bio           String
+  portraitUrl   String?       @map("portrait_url")
+  era           Era           @relation(fields: [eraId], references: [id])
+  eventPersons  EventPerson[]
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  @@map("guides")
+  @@map("persons")
 }
 
-model GuideDay {
-  id        Int         @id @default(autoincrement())
-  guideId   Int         @map("guide_id")
-  dayNumber Int         @map("day_number")
-  title     String
-  notes     String?
-  guide     Guide       @relation(fields: [guideId], references: [id])
-  items     GuideItem[]
-  createdAt DateTime    @default(now()) @map("created_at")
-  updatedAt DateTime    @updatedAt @map("updated_at")
+model EventPerson {
+  id       Int    @id @default(autoincrement())
+  eventId  Int    @map("event_id")
+  personId Int    @map("person_id")
+  role     String
+  event    Event  @relation(fields: [eventId], references: [id])
+  person   Person @relation(fields: [personId], references: [id])
 
-  @@map("guide_days")
+  @@unique([eventId, personId])
+  @@map("event_persons")
 }
 
-model GuideItem {
-  id             Int         @id @default(autoincrement())
-  guideDayId     Int         @map("guide_day_id")
-  attractionId   Int?        @map("attraction_id")
-  timeSlot       String      @map("time_slot")
-  customSpot     String?     @map("custom_spot")
-  durationMin    Int         @map("duration_min")
-  ticketReminder String?     @map("ticket_reminder")
-  tips           String?
-  transportTip   String?     @map("transport_tip")
-  guideDay       GuideDay    @relation(fields: [guideDayId], references: [id])
-  attraction     Attraction? @relation(fields: [attractionId], references: [id])
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+model Route {
+  id          Int         @id @default(autoincrement())
+  eraId       Int         @map("era_id")
+  name        String
+  description String
+  totalDays   Int         @map("total_days")
+  era         Era         @relation(fields: [eraId], references: [id])
+  stops       RouteStop[]
+  journeys    Journey[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
 
-  @@map("guide_items")
+  @@map("routes")
+}
+
+model RouteStop {
+  id      Int   @id @default(autoincrement())
+  routeId Int   @map("route_id")
+  siteId  Int   @map("site_id")
+  day     Int
+  order   Int
+  route   Route @relation(fields: [routeId], references: [id])
+  site    Site  @relation(fields: [siteId], references: [id])
+
+  @@map("route_stops")
+}
+
+model Journey {
+  id          Int           @id @default(autoincrement())
+  title       String
+  routeId     Int?          @map("route_id")
+  totalDays   Int           @map("total_days")
+  budgetAmount Int          @map("budget_amount")
+  transportMode String      @map("transport_mode")
+  travelStyle String        @map("travel_style")
+  rawJson     String?       @map("raw_json")
+  isSystem    Boolean       @default(false) @map("is_system")
+  creatorIp   String?       @map("creator_ip")
+  userId      String?       @map("user_id")
+  departureCity String?     @map("departure_city")
+  departureDate String?     @map("departure_date")
+  user        User?         @relation(fields: [userId], references: [id])
+  route       Route?        @relation(fields: [routeId], references: [id])
+  days        JourneyDay[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("journeys")
+}
+
+model JourneyDay {
+  id          Int          @id @default(autoincrement())
+  journeyId   Int          @map("journey_id")
+  dayNumber   Int          @map("day_number")
+  title       String
+  notes       String?
+  journey     Journey      @relation(fields: [journeyId], references: [id])
+  stops       JourneyStop[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("journey_days")
+}
+
+model JourneyStop {
+  id          Int      @id @default(autoincrement())
+  journeyDayId Int     @map("journey_day_id")
+  siteId      Int?     @map("site_id")
+  timeSlot    String   @map("time_slot")
+  customSpot  String?  @map("custom_spot")
+  durationMin Int      @map("duration_min")
+  tips        String?
+  transportTip String? @map("transport_tip")
+  journeyDay  JourneyDay @relation(fields: [journeyDayId], references: [id])
+  site        Site?    @relation(fields: [siteId], references: [id])
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("journey_stops")
 }
 
 model User {
@@ -170,7 +211,7 @@ model User {
   phoneVerified DateTime? @map("phone_verified")
   image         String?
   accounts      Account[]
-  guides        Guide[]
+  journeys      Journey[]
   favorites     Favorite[]
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -209,12 +250,12 @@ model VerificationToken {
 model Favorite {
   id        Int      @id @default(autoincrement())
   userId    String   @map("user_id")
-  guideId   Int      @map("guide_id")
+  siteId    Int      @map("site_id")
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  guide     Guide    @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@unique([userId, guideId])
+  @@unique([userId, siteId])
   @@map("favorites")
 }
 
