@@ -142,8 +142,22 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
   };
 
   const savePlan = async () => {
-    const parsed = pendingPlan.current;
-    if (!parsed) return;
+    // Try pendingPlan ref first; if lost (page refresh), try to recover from last assistant message
+    let parsed = pendingPlan.current;
+    if (!parsed) {
+      const lastAssistant = [...messages].reverse().find(m => m.role === "assistant");
+      if (lastAssistant) {
+        try {
+          const content = lastAssistant.content;
+          const jsonStr = content.substring(content.indexOf("{"), content.lastIndexOf("}") + 1);
+          parsed = JSON.parse(jsonStr);
+        } catch {}
+      }
+    }
+    if (!parsed) {
+      setMessages((prev) => [...prev, { role: "assistant", content: "未找到方案数据，请重新生成" }]);
+      return;
+    }
     setLoading(true);
     try {
       const saveRes = await fetch("/api/journeys", {
@@ -179,8 +193,9 @@ export default function JourneyWizard({ initialPrompt }: { initialPrompt?: strin
       }
       const saved = await saveRes.json();
       sessionStorage.removeItem(STORAGE_KEY);
-      setMessages((prev) => [...prev, { role: "assistant", content: "💾 方案已保存到「我的」！" }]);
-      setTimeout(() => router.push("/my?tab=journeys"), 1000);
+      setMessages((prev) => [...prev, { role: "assistant", content: "💾 方案已保存！正在跳转..." }]);
+      // Navigate directly to the saved journey detail page
+      setTimeout(() => router.push(`/journeys/${saved.id}`), 800);
     } catch (e: any) {
       setMessages((prev) => [...prev, { role: "assistant", content: `保存出错: ${e.message}` }]);
     }
