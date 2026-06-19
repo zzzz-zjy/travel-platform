@@ -1,16 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+
+function getTabFromURL(): "fav" | "journeys" {
+  if (typeof window === "undefined") return "fav";
+  const p = new URLSearchParams(window.location.search);
+  return p.get("tab") === "journeys" ? "journeys" : "fav";
+}
 
 export default function MyPage() {
-  const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") as "fav" | "journeys") || "fav";
-  const [tab, setTab] = useState<"fav" | "journeys">(initialTab);
+  const [tab, setTab] = useState<"fav" | "journeys">("fav");
   const [sites, setSites] = useState<any[]>([]);
   const [journeys, setJourneys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+
+  // Read tab from URL on mount (after save navigates to /my?tab=journeys)
+  useEffect(() => { setTab(getTabFromURL()); }, []);
 
   useEffect(() => {
     setLoading(true);
