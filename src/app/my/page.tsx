@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function MyPage() {
-  const [tab, setTab] = useState<"fav" | "journeys">("fav");
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as "fav" | "journeys") || "fav";
+  const [tab, setTab] = useState<"fav" | "journeys">(initialTab);
   const [sites, setSites] = useState<any[]>([]);
   const [journeys, setJourneys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

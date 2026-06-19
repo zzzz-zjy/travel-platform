@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Header from "@/components/ui/Header";
 import Providers from "@/components/Providers";
 import BottomNav from "@/components/ui/BottomNav";
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen" style={{ background: "var(--color-bg)", color: "var(--color-text)" }}>
         <Providers>
           <Header />
-          <main className="pb-16">{children}</main>
+          <main className="pb-16">
+            <Suspense fallback={null}>{children}</Suspense>
+          </main>
           <BottomNav />
         </Providers>
       </body>
